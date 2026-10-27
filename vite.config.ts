@@ -1,6 +1,6 @@
 import adapter from '@sveltejs/adapter-auto';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
 	server: {
@@ -12,6 +12,10 @@ export default defineConfig({
 		host: '127.0.0.1',
 		port: 4731,
 		strictPort: true
+	},
+	test: {
+		// `npm run package` copies tests into dist/ and .svelte-kit/; run only the sources.
+		include: ['src/**/*.test.ts']
 	},
 	plugins: [
 		sveltekit({

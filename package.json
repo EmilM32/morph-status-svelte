@@ -1,6 +1,6 @@
 {
 	"name": "morph-status-svelte",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "A morphing status icon for Svelte 5. One stroke pours between idle, loading, success, error, and warning.",
 	"license": "MIT",
 	"author": "Emil Majer (https://github.com/EmilM32)",
@@ -37,9 +37,10 @@
 		"prepublishOnly": "npm run package",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"lint": "eslint ."
+		"lint": "eslint .",
+		"test": "vitest run"
 	},
-	"files": ["dist", "docs/demo.png", "!dist/**/*.test.*", "!dist/**/*.spec.*"],
+	"files": ["dist", "docs/demo.png", "CHANGELOG.md", "!dist/**/*.test.*", "!dist/**/*.spec.*"],
 	"sideEffects": ["**/*.css"],
 	"svelte": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -66,7 +67,8 @@
 		"svelte-check": "^4.6.0",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.46.2",
-		"vite": "^8.3.0"
+		"vite": "^8.3.0",
+		"vitest": "^5.0.5"
 	},
 	"imports": {
 		"#lib": "./src/lib/index.js",

@@ -116,6 +116,13 @@
 	const markA = $derived(toPath(live.a));
 	const markB = $derived(toPath(live.b));
 
+	// A stroke shrinking to a point still paints a dot from its round caps.
+	// Its drawn length falls roughly with reveal², so it is down to a cap by
+	// about 0.4. Fade it out before then. Resting marks sit at 1.
+	function fade(reveal: number): number {
+		return Math.min(1, Math.max(0, (reveal - 0.35) / 0.4));
+	}
+
 	$effect(() => {
 		shape.stiffness = springStiffness;
 		shape.damping = springDamping;
@@ -216,6 +223,7 @@
 					pathLength="1"
 					stroke-dasharray="1"
 					stroke-dashoffset={1 - live.revealA}
+					stroke-opacity={fade(live.revealA)}
 				/>
 			{/if}
 			{#if live.revealB > 0.015}
@@ -229,6 +237,7 @@
 					pathLength="1"
 					stroke-dasharray="1"
 					stroke-dashoffset={1 - live.revealB}
+					stroke-opacity={fade(live.revealB)}
 				/>
 			{/if}
 		</g>

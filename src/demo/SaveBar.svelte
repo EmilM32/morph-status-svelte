@@ -5,6 +5,9 @@
 	let outcome = $state<'success' | 'error'>('success');
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
+	// The default palette is tuned for dark surfaces. These hold 3:1 on the light button.
+	const onLight = { idle: '#6E6E73', loading: '#0060DF', success: '#1F8A3D', error: '#D70015' };
+
 	const label = $derived(
 		phase === 'loading' ? 'Saving' : phase === 'success' ? 'Saved' : phase === 'error' ? 'Retry' : 'Save'
 	);
@@ -44,7 +47,7 @@
 			</button>
 		</div>
 		<button type="button" class="save" onclick={save} disabled={phase === 'loading'} aria-busy={phase === 'loading'}>
-			<MorphStatus state={phase} size={22} strokeWidth={11} announce={false} />
+			<MorphStatus state={phase} size={22} strokeWidth={11} colors={onLight} announce={false} />
 			{label}
 		</button>
 	</div>
@@ -63,6 +66,7 @@
 		border: 1px solid rgba(245, 245, 247, 0.1);
 		border-radius: 22px;
 		background: rgba(255, 255, 255, 0.03);
+		text-align: left;
 	}
 
 	h2 {

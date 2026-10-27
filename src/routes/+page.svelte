@@ -82,6 +82,7 @@
 			size={sizing.size}
 			strokeWidth={sizing.stroke}
 			colors={preset.colors}
+			announce={!playing}
 		/>
 	</div>
 	<p class="now">{DEFAULT_LABELS[phase]}</p>
@@ -99,7 +100,7 @@
 				<kbd>{item.key}</kbd>
 			</button>
 		{/each}
-		<button type="button" class="play" aria-pressed={playing} onclick={() => (autoplay = !autoplay)}>
+		<button type="button" class="play" onclick={() => (autoplay = !autoplay)}>
 			{playing ? 'Pause' : 'Play'}
 		</button>
 	</div>
@@ -256,14 +257,31 @@
 		background: rgba(255, 255, 255, 0.06);
 	}
 
-	.switcher button[aria-pressed='true'],
+	/* Stays dark so every preset's icon keeps its contrast on the selected state. */
+	.switcher button[aria-pressed='true'] {
+		background: rgba(255, 255, 255, 0.14);
+		box-shadow: inset 0 0 0 1px var(--line);
+	}
+
 	.group button[aria-pressed='true'] {
 		background: var(--ink);
 		color: #141416;
 	}
 
 	.play {
+		position: relative;
+		margin-left: 9px;
 		color: var(--muted);
+	}
+
+	.play::before {
+		content: '';
+		position: absolute;
+		top: 10px;
+		bottom: 10px;
+		left: -7px;
+		width: 1px;
+		background: var(--line);
 	}
 
 	kbd {
