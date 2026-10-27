@@ -1,6 +1,6 @@
 {
 	"name": "morph-status-svelte",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "A morphing status icon for Svelte 5. One stroke pours between idle, loading, success, error, and warning.",
 	"license": "MIT",
 	"author": "Emil Majer (https://github.com/EmilM32)",
@@ -40,7 +40,7 @@
 		"lint": "eslint .",
 		"test": "vitest run"
 	},
-	"files": ["dist", "docs/demo.png", "!dist/**/*.test.*", "!dist/**/*.spec.*"],
+	"files": ["dist", "docs/demo.png", "CHANGELOG.md", "!dist/**/*.test.*", "!dist/**/*.spec.*"],
 	"sideEffects": ["**/*.css"],
 	"svelte": "./dist/index.js",
 	"types": "./dist/index.d.ts",
