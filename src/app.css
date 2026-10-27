@@ -1,0 +1,54 @@
+:root {
+	--bg: #070708;
+	--ink: #f5f5f7;
+	--muted: #98989f;
+	--line: rgba(245, 245, 247, 0.14);
+	color-scheme: dark;
+	background: var(--bg);
+	color: var(--ink);
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+	min-height: 100%;
+}
+
+body {
+	min-height: 100vh;
+	font-family: Outfit, 'Avenir Next', 'Segoe UI', sans-serif;
+	font-weight: 400;
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	background:
+		radial-gradient(900px 480px at 50% -80px, rgba(10, 132, 255, 0.16), transparent 62%),
+		var(--bg);
+}
+
+button,
+input {
+	font: inherit;
+}
+
+button {
+	color: inherit;
+	touch-action: manipulation;
+}
+
+::selection {
+	background: #f5f5f7;
+	color: #141416;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	body {
+		background: var(--bg);
+	}
+}
