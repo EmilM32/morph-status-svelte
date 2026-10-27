@@ -37,7 +37,8 @@
 		"prepublishOnly": "npm run package",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"lint": "eslint ."
+		"lint": "eslint .",
+		"test": "vitest run"
 	},
 	"files": ["dist", "docs/demo.png", "!dist/**/*.test.*", "!dist/**/*.spec.*"],
 	"sideEffects": ["**/*.css"],
@@ -66,7 +67,8 @@
 		"svelte-check": "^4.6.0",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.46.2",
-		"vite": "^8.3.0"
+		"vite": "^8.3.0",
+		"vitest": "^5.0.5"
 	},
 	"imports": {
 		"#lib": "./src/lib/index.js",
