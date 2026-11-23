@@ -22,6 +22,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Internal
 
 - Component tests mount `MorphStatus` in jsdom with real springs: callback order, interrupted morphs, colors or reduced motion changing mid-morph, unmount, spring floors, the spinner, non-finite props and the live region. Unit tests now also cover the completion tracker and the SSR markup. `npm test` runs both as two Vitest projects (`unit`, `dom`).
+- CI on GitHub Actions: lint, types, tests, package and publint on Node 22 and 24, plus a job that compiles the components with the oldest Svelte in the peer range (`scripts/check-svelte-compat.mjs`).
+- Releases publish from a `v*` tag with npm trusted publishing and provenance. `prepublishOnly` now runs the full `npm run verify`, not only the package build.
 
 ## [0.1.1] - 2026-10-27
 

@@ -104,6 +104,13 @@ The demo serves at [http://127.0.0.1:4731](http://127.0.0.1:4731). `npm run buil
 
 In this repo the demo imports the component through `#lib`. Published apps import `morph-status-svelte`.
 
+`npm run verify` runs lint, types, tests and the package build, and runs before every publish. CI runs the same steps on Node 22 and 24, and also compiles the components with the oldest Svelte the peer range allows.
+
+### Releasing
+
+1. Bump `version` in `package.json` and move the `[Unreleased]` notes in `CHANGELOG.md` under a `## [x.y.z]` heading.
+2. Push a tag `vx.y.z` on that commit. `.github/workflows/release.yml` checks the tag against `package.json` and the changelog, then publishes with npm trusted publishing and provenance. A prerelease such as `1.0.0-beta.1` goes to the `next` dist-tag.
+
 ## License
 
 MIT © Emil Majer
