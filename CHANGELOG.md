@@ -6,6 +6,19 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Interrupting a morph (a new `state` before the last one settled) no longer leaves an unhandled `Error: Aborted` promise rejection in the console and in error trackers.
+- `oncomplete` now fires when `colors` change, or reduced motion turns on, in the middle of a morph. Before, that morph never reported completion.
+- `stiffness={0}` or `damping={0}` no longer leaves the spring running forever without settling. Stiffness is clamped to `0.02–1` and damping to `0.05–1`.
+- A non-finite `size`, `strokeWidth`, `stiffness` or `damping` (`NaN`, `Infinity`) falls back to the default instead of rendering `width="NaN"` or freezing the spring. Numeric strings are still accepted.
+- The `svelte` peer dependency is now `^5.29.0`, the first version that compiles the component. `^5` let 5.0–5.28 install and then fail to build.
+
+### Changed
+
+- The Node version requirement moved from `engines` to `devEngines`. It applies to working on this repo, not to apps that install the package.
+- `docs/demo.png` is no longer in the npm package (it was about 96% of the unpacked size). The README loads it from GitHub.
+
 ## [0.1.1] - 2026-10-27
 
 ### Fixed

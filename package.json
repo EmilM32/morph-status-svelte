@@ -25,8 +25,12 @@
 	"bugs": {
 		"url": "https://github.com/EmilM32/morph-status-svelte/issues"
 	},
-	"engines": {
-		"node": ">=22.17"
+	"devEngines": {
+		"runtime": {
+			"name": "node",
+			"version": ">=22.17",
+			"onFail": "error"
+		}
 	},
 	"scripts": {
 		"dev": "vite dev --host 127.0.0.1 --port 4731",
@@ -40,7 +44,7 @@
 		"lint": "eslint .",
 		"test": "vitest run"
 	},
-	"files": ["dist", "docs/demo.png", "CHANGELOG.md", "!dist/**/*.test.*", "!dist/**/*.spec.*"],
+	"files": ["dist", "CHANGELOG.md", "!dist/**/*.test.*", "!dist/**/*.spec.*"],
 	"sideEffects": ["**/*.css"],
 	"svelte": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -51,7 +55,7 @@
 		}
 	},
 	"peerDependencies": {
-		"svelte": "^5"
+		"svelte": "^5.29.0"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.1",

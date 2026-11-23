@@ -4,7 +4,7 @@ A status icon for Svelte 5. One stroke pours between idle, a spinner, a check, a
 
 **Live demo:** [morph-status-svelte.vercel.app](https://morph-status-svelte.vercel.app)
 
-![The morphing status icon on the demo page, with state controls and the npm install command](docs/demo.png)
+![The morphing status icon on the demo page, with state controls and the npm install command](https://raw.githubusercontent.com/EmilM32/morph-status-svelte/main/docs/demo.png)
 
 ## Install
 
@@ -12,7 +12,7 @@ A status icon for Svelte 5. One stroke pours between idle, a spinner, a check, a
 npm install morph-status-svelte
 ```
 
-Peer dependency: `svelte` ^5. The icon’s CSS ships inside the component. There are no other runtime dependencies.
+Peer dependency: `svelte` ^5.29 (the component uses `{@attach}`). The icon’s CSS ships inside the component. There are no other runtime dependencies.
 
 ## Usage
 
@@ -62,11 +62,11 @@ A save button is the usual place it shows up. `announce={false}` leaves the acce
 | Prop | Default | |
 | --- | --- | --- |
 | `state` | `'idle'` | `'idle' \| 'loading' \| 'success' \| 'error' \| 'warning'` |
-| `size` | `32` | CSS pixels. The drawing is a 100×100 grid, so it stays sharp at any size. |
-| `strokeWidth` | `10` | Stroke width in that 100×100 grid. |
+| `size` | `32` | CSS pixels. The drawing is a 100×100 grid, so it stays sharp at any size. A non-finite value falls back to `32`. |
+| `strokeWidth` | `10` | Stroke width in that 100×100 grid, clamped to `0.5–28`. |
 | `colors` | system colors | Partial map of hex or `rgb()` colors per state. |
-| `stiffness` | `0.2` | Svelte spring stiffness, clamped to `0–1`. Higher is faster. |
-| `damping` | `0.72` | Svelte spring damping, clamped to `0–1`. Lower overshoots. |
+| `stiffness` | `0.2` | Svelte spring stiffness, clamped to `0.02–1`. Higher is faster. |
+| `damping` | `0.72` | Svelte spring damping, clamped to `0.05–1`. Lower overshoots. |
 | `label` | — | One accessible name for every state. |
 | `labels` | Idle, Loading, Success, Error, Warning | Accessible name per state. |
 | `announce` | `true` | Polite live region. Set false inside a control that already has a name. |
@@ -88,12 +88,12 @@ Default colors are the Apple system set: gray, blue, green, red, yellow.
 - Each mark is one or two strokes with the same sample count. A single ribbon splits along its length when the next mark needs two strokes (the check breaking into a cross), so the shape pours instead of crossfading.
 - Loading is an open arc on a spring, then a steady rotation. Leaving that state folds the current angle into the samples, so the next pour starts from the frame on screen.
 - `prefers-reduced-motion: reduce` snaps the spring and holds the spinner still.
-- Stiffness and damping are read on every change, including mid-morph. Very low damping can overshoot the stroke for a moment. That is the spring.
+- Stiffness and damping are read on every change, including mid-morph. Very low damping can overshoot the stroke for a moment. That is the spring. The floors (`0.02` stiffness, `0.05` damping) keep every morph settling within a few seconds, so `oncomplete` always arrives. A numeric prop that is not a finite number falls back to its default.
 - The icon is a live region (`role="status"`) whose label follows the state. Pass `label` for a single name, or `labels` to rename each one.
 
 ## Development
 
-Requires Node `>=22.17`.
+Requires Node `>=22.17` for development (`devEngines`). The published package has no Node requirement.
 
 ```bash
 npm install
