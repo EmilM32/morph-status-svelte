@@ -15,7 +15,28 @@ export default defineConfig({
 	},
 	test: {
 		// `npm run package` copies tests into dist/ and .svelte-kit/; run only the sources.
-		include: ['src/**/*.test.ts']
+		projects: [
+			{
+				extends: true,
+				test: {
+					name: 'unit',
+					environment: 'node',
+					include: ['src/**/*.test.ts'],
+					exclude: ['src/**/*.svelte.test.ts']
+				}
+			},
+			{
+				// Component tests mount the client build in jsdom, with real springs on rAF.
+				extends: true,
+				resolve: { conditions: ['browser'] },
+				test: {
+					name: 'dom',
+					environment: 'jsdom',
+					include: ['src/**/*.svelte.test.ts'],
+					setupFiles: ['src/test/setup-dom.ts']
+				}
+			}
+		]
 	},
 	plugins: [
 		sveltekit({

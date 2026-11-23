@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { Spring } from 'svelte/motion';
+import { trackUnhandledRejections } from '../../test/rejections.js';
 import { Completion } from './completion.js';
 import type { StatusName } from './types.js';
 
@@ -28,26 +29,7 @@ class FakeSpring {
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-// Node's `process`, typed here because the repo does not depend on @types/node.
-type RejectionListener = (reason: unknown) => void;
-const { process } = globalThis as unknown as {
-	process: {
-		on(event: 'unhandledRejection', listener: RejectionListener): void;
-		off(event: 'unhandledRejection', listener: RejectionListener): void;
-	};
-};
-
-let rejections: unknown[] = [];
-const onRejection: RejectionListener = (reason) => rejections.push(reason);
-
-beforeEach(() => {
-	rejections = [];
-	process.on('unhandledRejection', onRejection);
-});
-
-afterEach(() => {
-	process.off('unhandledRejection', onRejection);
-});
+const rejections = trackUnhandledRejections();
 
 function setup() {
 	const done: StatusName[] = [];

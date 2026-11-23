@@ -19,6 +19,10 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The Node version requirement moved from `engines` to `devEngines`. It applies to working on this repo, not to apps that install the package.
 - `docs/demo.png` is no longer in the npm package (it was about 96% of the unpacked size). The README loads it from GitHub.
 
+### Internal
+
+- Component tests mount `MorphStatus` in jsdom with real springs: callback order, interrupted morphs, colors or reduced motion changing mid-morph, unmount, spring floors, the spinner, non-finite props and the live region. Unit tests now also cover the completion tracker and the SSR markup. `npm test` runs both as two Vitest projects (`unit`, `dom`).
+
 ## [0.1.1] - 2026-10-27
 
 ### Fixed

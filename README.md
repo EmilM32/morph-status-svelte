@@ -100,7 +100,7 @@ npm install
 npm run dev
 ```
 
-The demo serves at [http://127.0.0.1:4731](http://127.0.0.1:4731). `npm run build` builds the demo site. `npm run package` writes the library to `dist/` and runs publint. `npm run check` and `npm run lint` cover types and ESLint.
+The demo serves at [http://127.0.0.1:4731](http://127.0.0.1:4731). `npm run build` builds the demo site. `npm run package` writes the library to `dist/` and runs publint. `npm test` runs the unit tests in Node and the component tests in jsdom. `npm run check` and `npm run lint` cover types and ESLint.
 
 In this repo the demo imports the component through `#lib`. Published apps import `morph-status-svelte`.
 
