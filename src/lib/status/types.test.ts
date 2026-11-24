@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LABELS, clampOr, finiteOr, normalizeStatus, statusLabel } from './types.js';
+import { DEFAULT_LABELS, clampOr, cssColor, finiteOr, normalizeStatus, statusLabel } from './types.js';
 
 describe('normalizeStatus', () => {
 	it('keeps known states and falls back to idle', () => {
@@ -44,4 +44,24 @@ describe('clampOr', () => {
 		expect(clampOr(Number.NaN, 0.02, 1, 0.2)).toBe(0.2);
 		expect(clampOr(Infinity, 0.02, 1, 0.2)).toBe(0.2);
 	});
+});
+
+describe('cssColor', () => {
+	it.each(['#0a84ff', 'rgb(10 20 30 / 50%)', 'hsl(210 100% 50%)', 'oklch(70% 0.2 250)', 'rebeccapurple', 'currentColor', 'var(--brand)'])(
+		'keeps %s',
+		(value) => {
+			expect(cssColor(value)).toBe(value);
+		}
+	);
+
+	it('trims the value', () => {
+		expect(cssColor('  #fff  ')).toBe('#fff');
+	});
+
+	it.each([undefined, null, 42, '', '   ', 'red; background: url(x)', 'red}', '{red', '<red>', 'red /* x */'])(
+		'drops %s',
+		(value) => {
+			expect(cssColor(value)).toBeUndefined();
+		}
+	);
 });

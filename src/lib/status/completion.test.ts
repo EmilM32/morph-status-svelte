@@ -35,9 +35,8 @@ function setup() {
 	const done: StatusName[] = [];
 	const completion = new Completion((state) => done.push(state));
 	const shape = new FakeSpring();
-	const ink = new FakeSpring();
-	const morph = (state: StatusName) => completion.start(state, shape.set(), ink.set());
-	return { done, completion, shape, ink, morph };
+	const morph = (state: StatusName) => completion.start(state, shape.set());
+	return { done, completion, shape, morph };
 }
 
 describe('Spring (the behavior Completion relies on)', () => {
@@ -50,72 +49,56 @@ describe('Spring (the behavior Completion relies on)', () => {
 });
 
 describe('Completion', () => {
-	it('reports a morph once both springs settle', async () => {
-		const { done, shape, ink, morph } = setup();
+	it('reports a morph when the shape spring settles', async () => {
+		const { done, shape, morph } = setup();
 		morph('success');
-		shape.settle();
 		await flush();
 		expect(done).toEqual([]);
-		ink.settle();
+		shape.settle();
 		await flush();
 		expect(done).toEqual(['success']);
 	});
 
 	it('leaves no unhandled rejection when morphs interrupt each other', async () => {
-		const { done, shape, ink, morph } = setup();
+		const { done, shape, morph } = setup();
 		for (const state of ['loading', 'success', 'error', 'warning', 'idle'] as const) morph(state);
 		shape.settle();
-		ink.settle();
 		await flush();
 		expect(rejections).toEqual([]);
 		expect(done).toEqual(['idle']);
 	});
 
-	it('still reports a morph whose color changed midway', async () => {
-		const { done, completion, shape, ink, morph } = setup();
-		morph('success');
-		completion.retarget(ink.set());
-		shape.settle();
-		ink.settle();
-		await flush();
-		expect(rejections).toEqual([]);
-		expect(done).toEqual(['success']);
-	});
-
-	it('reports once when the ink had already settled before the color change', async () => {
-		const { done, completion, shape, ink, morph } = setup();
-		morph('error');
-		ink.settle();
-		await flush();
-		completion.retarget(ink.set());
-		ink.settle();
-		shape.settle();
-		await flush();
-		expect(done).toEqual(['error']);
-	});
-
 	it('reports a morph whose shape was snapped mid-flight, as reduced motion does', async () => {
-		const { done, completion, shape, ink, morph } = setup();
+		const { done, completion, shape, morph } = setup();
 		morph('warning');
-		completion.retarget(ink.set({ instant: true }), shape.set({ instant: true }));
+		completion.retarget(shape.set({ instant: true }));
 		await flush();
 		expect(rejections).toEqual([]);
 		expect(done).toEqual(['warning']);
 	});
 
+	it('reports once when a retarget lands after the morph already settled', async () => {
+		const { done, completion, shape, morph } = setup();
+		morph('error');
+		shape.settle();
+		await flush();
+		completion.retarget(shape.set({ instant: true }));
+		await flush();
+		expect(done).toEqual(['error']);
+	});
+
 	it('ignores a retarget when nothing is pending', async () => {
-		const { done, completion, ink } = setup();
-		completion.retarget(ink.set({ instant: true }));
+		const { done, completion, shape } = setup();
+		completion.retarget(shape.set({ instant: true }));
 		await flush();
 		expect(done).toEqual([]);
 	});
 
 	it('never reports after cancel', async () => {
-		const { done, completion, shape, ink, morph } = setup();
+		const { done, completion, shape, morph } = setup();
 		morph('success');
 		completion.cancel();
 		shape.settle();
-		ink.settle();
 		await flush();
 		expect(done).toEqual([]);
 	});

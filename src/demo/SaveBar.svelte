@@ -1,12 +1,13 @@
 <script lang="ts">
-	import { MorphStatus, type StatusName } from '#lib';
+	import { DEFAULT_COLORS_LIGHT, MorphStatus, type StatusName } from '#lib';
 
 	let phase = $state<StatusName>('idle');
 	let outcome = $state<'success' | 'error'>('success');
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
-	// The default palette is tuned for dark surfaces. These hold 3:1 on the light button.
-	const onLight = { idle: '#6E6E73', loading: '#0060DF', success: '#1F8A3D', error: '#D70015' };
+	// The page is `color-scheme: dark`, so the icon's defaults are the dark set.
+	// The button is light, so it takes the light set instead. These hold 3:1 on it.
+	const onLight = DEFAULT_COLORS_LIGHT;
 
 	const label = $derived(
 		phase === 'loading' ? 'Saving' : phase === 'success' ? 'Saved' : phase === 'error' ? 'Retry' : 'Save'

@@ -64,30 +64,43 @@ A save button is the usual place it shows up. `announce={false}` leaves the acce
 | `state` | `'idle'` | `'idle' \| 'loading' \| 'success' \| 'error' \| 'warning'` |
 | `size` | `32` | CSS pixels. The drawing is a 100×100 grid, so it stays sharp at any size. A non-finite value falls back to `32`. |
 | `strokeWidth` | `10` | Stroke width in that 100×100 grid, clamped to `0.5–28`. |
-| `colors` | system colors | Partial map of hex or `rgb()` colors per state. |
+| `colors` | light or dark set | Partial map of CSS colors per state: hex, `rgb()`, `hsl()`, `oklch()`, named, `currentColor` or `var(--token)`. |
 | `stiffness` | `0.2` | Svelte spring stiffness, clamped to `0.02–1`. Higher is faster. |
 | `damping` | `0.72` | Svelte spring damping, clamped to `0.05–1`. Lower overshoots. |
 | `label` | — | One accessible name for every state. |
 | `labels` | Idle, Loading, Success, Error, Warning | Accessible name per state. |
 | `announce` | `true` | Polite live region. Set false inside a control that already has a name. |
 | `onchange` | — | Called when a morph starts, after the first render. |
-| `oncomplete` | — | Called when the springs settle on the new state. |
+| `oncomplete` | — | Called when the shape settles on the new state. |
 | `class` | — | Class on the root element. |
 
-Default colors are the Apple system set: gray, blue, green, red, yellow.
+### Colors
+
+The stroke is drawn in `currentColor`, and the icon's stylesheet sets `color` for the current state. Changing state eases the color over a CSS transition.
+
+The defaults follow the page's [`color-scheme`](https://developer.mozilla.org/docs/Web/CSS/color-scheme): a light set (`DEFAULT_COLORS_LIGHT`) on light or unset schemes, and Apple's dark system set (`DEFAULT_COLORS_DARK`) on `color-scheme: dark`. Each holds at least 3:1 against its background (WCAG 1.4.11). Browsers without `light-dark()` get the light set.
+
+Override a color per icon with `colors`, or for a whole subtree with CSS custom properties:
 
 ```svelte
-<MorphStatus
-	state={phase}
-	colors={{ success: '#63E6BE', error: '#FF375F' }}
-/>
+<MorphStatus state={phase} colors={{ success: 'oklch(78% 0.17 160)', error: 'var(--danger)' }} />
 ```
+
+```css
+.toolbar {
+	--morph-status-success: #63e6be;
+	--morph-status-error: #ff375f;
+	--morph-status-color-duration: 250ms; /* color transition, default 400ms */
+}
+```
+
+`colors` wins over inherited custom properties. A value the browser does not parse as a color is ignored, and so is one containing `;`, braces or a comment. Under `forced-colors: active` (Windows High Contrast) the icon is drawn in the system text color, and the shape carries the state.
 
 ## Notes
 
 - Each mark is one or two strokes with the same sample count. A single ribbon splits along its length when the next mark needs two strokes (the check breaking into a cross), so the shape pours instead of crossfading.
 - Loading is an open arc on a spring, then a steady rotation. Leaving that state folds the current angle into the samples, so the next pour starts from the frame on screen.
-- `prefers-reduced-motion: reduce` snaps the spring and holds the spinner still.
+- `prefers-reduced-motion: reduce` snaps the spring, holds the spinner still, and changes the color without a transition.
 - Stiffness and damping are read on every change, including mid-morph. Very low damping can overshoot the stroke for a moment. That is the spring. The floors (`0.02` stiffness, `0.05` damping) keep every morph settling within a few seconds, so `oncomplete` always arrives. A numeric prop that is not a finite number falls back to its default.
 - The icon is a live region (`role="status"`) whose label follows the state. Pass `label` for a single name, or `labels` to rename each one.
 

@@ -1,4 +1,4 @@
-import { DEFAULT_COLORS, type StatusName } from './types.js';
+import type { StatusName } from './types.js';
 
 /** Shared sample count so every mark can pour into the next. */
 export const POINT_COUNT = 28;
@@ -11,8 +11,6 @@ export type Glyph = {
 	revealA: number;
 	revealB: number;
 };
-
-export type RGB = { r: number; g: number; b: number };
 
 const CENTER = 50;
 const RADIUS = 30;
@@ -224,37 +222,4 @@ export function bakeRotation(glyph: Glyph, angle: number): Glyph {
 		revealA: glyph.revealA,
 		revealB: glyph.revealB
 	};
-}
-
-export function parseColor(input: string, fallback: RGB): RGB {
-	const raw = input.trim();
-	const rgb = raw.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
-	if (rgb) {
-		return {
-			r: clampChannel(Number(rgb[1])),
-			g: clampChannel(Number(rgb[2])),
-			b: clampChannel(Number(rgb[3]))
-		};
-	}
-	const hex = raw.replace(/^#/, '');
-	const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
-	if (!/^[0-9a-fA-F]{6}/.test(full)) return fallback;
-	return {
-		r: Number.parseInt(full.slice(0, 2), 16),
-		g: Number.parseInt(full.slice(2, 4), 16),
-		b: Number.parseInt(full.slice(4, 6), 16)
-	};
-}
-
-function clampChannel(value: number): number {
-	if (Number.isNaN(value)) return 0;
-	return Math.min(255, Math.max(0, value));
-}
-
-export function fallbackRgb(state: StatusName): RGB {
-	return parseColor(DEFAULT_COLORS[state], { r: 142, g: 142, b: 147 });
-}
-
-export function rgbCss(color: RGB): string {
-	return `rgb(${Math.round(color.r)} ${Math.round(color.g)} ${Math.round(color.b)})`;
 }

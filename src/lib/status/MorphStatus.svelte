@@ -2,18 +2,8 @@
 	import { untrack } from 'svelte';
 	import { Spring, prefersReducedMotion } from 'svelte/motion';
 	import { Completion } from './completion.js';
+	import { alignGlyph, bakeRotation, glyphFor, toPath } from './geometry.js';
 	import {
-		alignGlyph,
-		bakeRotation,
-		fallbackRgb,
-		glyphFor,
-		parseColor,
-		rgbCss,
-		toPath,
-		type RGB
-	} from './geometry.js';
-	import {
-		DEFAULT_COLORS,
 		DEFAULT_DAMPING,
 		DEFAULT_SIZE,
 		DEFAULT_STIFFNESS,
@@ -22,7 +12,9 @@
 		MIN_DAMPING,
 		MIN_STIFFNESS,
 		MIN_STROKE,
+		STATUS_STATES,
 		clampOr,
+		cssColor,
 		finiteOr,
 		normalizeStatus,
 		statusLabel,
@@ -37,7 +29,11 @@
 		size?: number;
 		/** Stroke width in viewBox units, clamped to 0.5–28. The icon is drawn on a 100×100 grid. */
 		strokeWidth?: number;
-		/** Override any of the built-in state colors. Hex or `rgb()`. */
+		/**
+		 * Override any state's color with any CSS color: hex, `rgb()`, `hsl()`, `oklch()`,
+		 * a named color, `currentColor` or `var(--token)`. A value the browser cannot parse
+		 * is ignored. The defaults follow the page's `color-scheme`.
+		 */
 		colors?: Partial<StatusColors>;
 		/** Svelte spring stiffness, clamped to 0.02–1. Higher is snappier. Read live, including mid-morph. */
 		stiffness?: number;
@@ -51,7 +47,7 @@
 		announce?: boolean;
 		/** Fires when a morph starts, after the first render. */
 		onchange?: (state: StatusName) => void;
-		/** Fires when the springs have settled on `state`. */
+		/** Fires when the shape has settled on `state`. The color eases on its own CSS transition. */
 		oncomplete?: (state: StatusName) => void;
 		class?: string;
 	};
@@ -74,24 +70,20 @@
 	const phase = $derived(normalizeStatus(status));
 	const px = $derived(Math.max(1, finiteOr(size, DEFAULT_SIZE)));
 	const weight = $derived(clampOr(strokeWidth, MIN_STROKE, MAX_STROKE, DEFAULT_STROKE));
-	const palette = $derived({ ...DEFAULT_COLORS, ...colors });
+	// Set as `--morph-status-<state>` on the root. The stylesheet picks the one for the current state.
+	const custom = $derived(
+		Object.fromEntries(STATUS_STATES.map((name) => [name, cssColor(colors?.[name])])) as Partial<StatusColors>
+	);
 	const caption = $derived(statusLabel(phase, labels, label));
 	const springStiffness = $derived(clampOr(stiffness, MIN_STIFFNESS, 1, DEFAULT_STIFFNESS));
 	const springDamping = $derived(clampOr(damping, MIN_DAMPING, 1, DEFAULT_DAMPING));
 
 	const initialName = untrack(() => normalizeStatus(status));
-	const initialHex = untrack(() => ({ ...DEFAULT_COLORS, ...colors })[initialName]);
 
 	const shape = new Spring(glyphFor(initialName), {
 		stiffness: untrack(() => springStiffness),
 		damping: untrack(() => springDamping),
 		precision: 0.15
-	});
-
-	const ink = new Spring<RGB>(parseColor(initialHex, fallbackRgb(initialName)), {
-		stiffness: untrack(() => springStiffness),
-		damping: untrack(() => springDamping),
-		precision: 0.4
 	});
 
 	// Spinner angle lives on the node so a frame does not re-render the path.
@@ -106,7 +98,6 @@
 		};
 	}
 	let seenName = initialName;
-	let seenHex = initialHex;
 	const completion = new Completion((done) => oncomplete?.(done));
 
 	function paintAngle(next: number) {
@@ -118,7 +109,6 @@
 	}
 
 	const live = $derived(shape.current);
-	const color = $derived(rgbCss(ink.current));
 	const markA = $derived(toPath(live.a));
 	const markB = $derived(toPath(live.b));
 
@@ -132,20 +122,15 @@
 	$effect(() => {
 		shape.stiffness = springStiffness;
 		shape.damping = springDamping;
-		ink.stiffness = springStiffness;
-		ink.damping = springDamping;
 	});
 
 	$effect(() => {
 		const next = phase;
 		const reduced = prefersReducedMotion.current;
-		const hex = palette[next];
 		const stateChanged = next !== seenName;
-		const colorChanged = hex !== seenHex;
-		if (!stateChanged && !colorChanged && !reduced) return;
-		if (stateChanged) seenName = next;
-		if (colorChanged) seenHex = hex;
-		untrack(() => morph(next, hex, reduced, stateChanged));
+		if (!stateChanged && !reduced) return;
+		seenName = next;
+		untrack(() => morph(next, reduced, stateChanged));
 	});
 
 	$effect(() => {
@@ -167,15 +152,14 @@
 		return () => completion.cancel();
 	});
 
-	function morph(next: StatusName, hex: string, reduced: boolean, stateChanged: boolean) {
-		const rgb = parseColor(hex, fallbackRgb(next));
+	function morph(next: StatusName, reduced: boolean, stateChanged: boolean) {
 		const motion = reduced ? { instant: true } : undefined;
 
 		if (!stateChanged) {
-			if (reduced) paintAngle(0);
-			const shapeDone = reduced ? shape.set(glyphFor(next), motion) : undefined;
-			// The new targets cancel the pending morph's promises, so wait on them again.
-			completion.retarget(ink.set(rgb, motion), shapeDone);
+			// Reduced motion turned on: snap the mark. That cancels the pending
+			// morph's spring promise, so wait on the new one.
+			paintAngle(0);
+			completion.retarget(shape.set(glyphFor(next), motion));
 			return;
 		}
 
@@ -191,7 +175,7 @@
 			paintAngle(0);
 			void shape.set(alignGlyph(baked, target), { instant: true });
 		}
-		completion.start(next, shape.set(target, motion), ink.set(rgb, motion));
+		completion.start(next, shape.set(target, motion));
 	}
 </script>
 
@@ -200,6 +184,11 @@
 	data-state={phase}
 	style:width="{px}px"
 	style:height="{px}px"
+	style:--morph-status-idle={custom.idle}
+	style:--morph-status-loading={custom.loading}
+	style:--morph-status-success={custom.success}
+	style:--morph-status-error={custom.error}
+	style:--morph-status-warning={custom.warning}
 	role={announce ? 'status' : undefined}
 	aria-live={announce ? 'polite' : undefined}
 	aria-atomic={announce ? 'true' : undefined}
@@ -210,7 +199,7 @@
 				<path
 					d={markA}
 					fill="none"
-					stroke={color}
+					stroke="currentColor"
 					stroke-width={weight}
 					stroke-linecap="round"
 					stroke-linejoin="round"
@@ -224,7 +213,7 @@
 				<path
 					d={markB}
 					fill="none"
-					stroke={color}
+					stroke="currentColor"
 					stroke-width={weight}
 					stroke-linecap="round"
 					stroke-linejoin="round"
@@ -248,6 +237,58 @@
 		flex: none;
 		line-height: 0;
 		vertical-align: middle;
+		/* Defaults for a light color-scheme. Also the fallback without light-dark(). */
+		--_ms-idle: #6c6c70;
+		--_ms-loading: #0060df;
+		--_ms-success: #1f8a3d;
+		--_ms-error: #d70015;
+		--_ms-warning: #b25000;
+		transition: color var(--morph-status-color-duration, 400ms) ease-out;
+	}
+
+	/* Light and dark defaults follow the page's color-scheme. Keep in sync with types.ts. */
+	@supports (color: light-dark(#000, #fff)) {
+		.morph-status {
+			--_ms-idle: light-dark(#6c6c70, #8e8e93);
+			--_ms-loading: light-dark(#0060df, #0a84ff);
+			--_ms-success: light-dark(#1f8a3d, #30d158);
+			--_ms-error: light-dark(#d70015, #ff453a);
+			--_ms-warning: light-dark(#b25000, #ffd60a);
+		}
+	}
+
+	/* `--morph-status-<state>` comes from the `colors` prop, or from any ancestor's CSS. */
+	.morph-status[data-state='idle'] {
+		color: var(--morph-status-idle, var(--_ms-idle));
+	}
+
+	.morph-status[data-state='loading'] {
+		color: var(--morph-status-loading, var(--_ms-loading));
+	}
+
+	.morph-status[data-state='success'] {
+		color: var(--morph-status-success, var(--_ms-success));
+	}
+
+	.morph-status[data-state='error'] {
+		color: var(--morph-status-error, var(--_ms-error));
+	}
+
+	.morph-status[data-state='warning'] {
+		color: var(--morph-status-warning, var(--_ms-warning));
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.morph-status {
+			transition: none;
+		}
+	}
+
+	/* Windows High Contrast and similar: draw in the system text color. The shape carries the state. */
+	@media (forced-colors: active) {
+		.morph-status[data-state] {
+			color: CanvasText;
+		}
 	}
 
 	svg {

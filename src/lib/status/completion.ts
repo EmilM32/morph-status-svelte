@@ -11,29 +11,28 @@ function noop() {}
  */
 export class Completion {
 	#generation = 0;
-	#pending: { token: number; state: StatusName; shape: Promise<void> } | null = null;
+	#pending: { token: number; state: StatusName } | null = null;
 	readonly #notify: (state: StatusName) => void;
 
 	constructor(notify: (state: StatusName) => void) {
 		this.#notify = notify;
 	}
 
-	/** A new morph toward `state`. Supersedes the pending one. */
-	start(state: StatusName, shapeDone: Promise<void>, inkDone: Promise<void>): void {
+	/** A new morph toward `state`, done when `shapeDone` resolves. Supersedes the pending one. */
+	start(state: StatusName, shapeDone: Promise<void>): void {
 		const token = ++this.#generation;
-		this.#pending = { token, state, shape: shapeDone };
-		this.#wait(token, shapeDone, inkDone);
+		this.#pending = { token, state };
+		this.#wait(token, shapeDone);
 	}
 
 	/**
-	 * New spring targets for the state already pending, such as a color change
-	 * mid-morph. Pass `shapeDone` only when the shape spring was set again too.
+	 * The shape spring was set again for the state already pending, for example
+	 * snapped when reduced motion turned on mid-morph. Its earlier promise was
+	 * rejected, so wait on the new one.
 	 */
-	retarget(inkDone: Promise<void>, shapeDone?: Promise<void>): void {
+	retarget(shapeDone: Promise<void>): void {
 		const pending = this.#pending;
-		if (!pending) return;
-		if (shapeDone) pending.shape = shapeDone;
-		this.#wait(pending.token, pending.shape, inkDone);
+		if (pending) this.#wait(pending.token, shapeDone);
 	}
 
 	/** Drop the pending morph without reporting it, for example on unmount. */
@@ -42,8 +41,8 @@ export class Completion {
 		this.#pending = null;
 	}
 
-	#wait(token: number, shapeDone: Promise<void>, inkDone: Promise<void>): void {
-		Promise.all([shapeDone, inkDone]).then(() => this.#finish(token), noop);
+	#wait(token: number, shapeDone: Promise<void>): void {
+		shapeDone.then(() => this.#finish(token), noop);
 	}
 
 	#finish(token: number): void {

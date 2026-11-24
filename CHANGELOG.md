@@ -6,6 +6,20 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Colors are CSS now.** The stroke is drawn in `currentColor`, and the icon's stylesheet picks the color for the current state. It eases over a CSS transition instead of a second spring.
+- `colors` accepts any CSS color: hex, `rgb()`, `hsl()`, `oklch()`, named colors, `currentColor` and `var(--token)`. Before, anything but hex or `rgb()` silently fell back to gray, and an alpha channel was dropped.
+- Colors can be themed for a whole subtree with `--morph-status-idle`, `--morph-status-loading`, `--morph-status-success`, `--morph-status-error` and `--morph-status-warning`. `--morph-status-color-duration` sets the transition (default `400ms`).
+- **Default colors follow `color-scheme`.** A new light set (`DEFAULT_COLORS_LIGHT`) is used on light or unset schemes, and the previous colors (`DEFAULT_COLORS_DARK`) on `color-scheme: dark`. Each holds at least 3:1 against its background. The old defaults reached only 1.4:1 (warning) and 2:1 (success) on white. A dark page that does not declare `color-scheme: dark` now gets the light set. Declare it, or pass `colors`.
+- `oncomplete` fires when the shape settles. The color transition runs on its own CSS timing.
+
+### Added
+
+- `DEFAULT_COLORS_LIGHT` and `DEFAULT_COLORS_DARK`. `DEFAULT_COLORS` stays as a deprecated alias of the dark set.
+- Under `forced-colors: active` (Windows High Contrast) the icon is drawn in the system text color. Before, it kept its own color, which could vanish against a high-contrast background.
+- Reduced motion also turns off the color transition.
+
 ## [0.1.2] - 2026-11-24
 
 ### Fixed
