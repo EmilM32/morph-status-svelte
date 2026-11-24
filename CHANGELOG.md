@@ -8,6 +8,14 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Internal
 
+- Demo:
+  - With reduced motion, autoplay stays off until the visitor presses Play, and Play now works. Before, the button did nothing.
+  - The 1–5 shortcuts act only while focus is in the status group (WCAG 2.1.4), and skip key repeat and IME composition. Before, they fired anywhere on the page.
+  - Fonts are self-hosted with `@fontsource`. The demo makes no requests to Google.
+  - A Dark/Light surface switch. Demo colors are tokens. The Default preset uses the library's own colors, so the switch shows them following `color-scheme`. Ink uses the page's tokens, and Signal uses `light-dark()`. The Save button is the inverse of the page and sets its own `color-scheme`, so its icon picks the matching default set without a `colors` prop.
+
+### Internal
+
 - Browser tests (Playwright) in Chromium, Firefox and WebKit, run in CI per engine.
   - Each resting glyph, and the glyph after a real morph (including leaving `loading` mid-spin), must paint the same pixels as a plain solid SVG path of that shape. This catches engine differences in `pathLength`, dash patterns, round caps and the rotation fold, without stored screenshots.
   - Also covered: default colors per `color-scheme`, custom colors (`hsl()`, `currentColor`, inherited variables, invalid values), forced colors (Chromium), the spinner, reduced motion, and the accessibility tree for each `a11y` mode.

@@ -1,37 +1,35 @@
 import type { StatusColors } from '#lib';
 
-export const colorPresets: { id: string; label: string; colors: StatusColors }[] = [
+// Each preset works on both surfaces. `colors` takes any CSS color, so the
+// presets lean on that: no colors at all, the page's own tokens, and light-dark().
+export const colorPresets: { id: string; label: string; colors: Partial<StatusColors> | undefined }[] = [
 	{
-		id: 'system',
-		label: 'System',
-		colors: {
-			idle: '#8E8E93',
-			loading: '#0A84FF',
-			success: '#30D158',
-			error: '#FF453A',
-			warning: '#FFD60A'
-		}
+		// The library's defaults, which follow color-scheme.
+		id: 'default',
+		label: 'Default',
+		colors: undefined
 	},
 	{
 		id: 'ink',
 		label: 'Ink',
 		colors: {
-			idle: '#636366',
-			loading: '#F5F5F7',
-			success: '#F5F5F7',
-			error: '#F5F5F7',
-			warning: '#F5F5F7'
+			idle: 'var(--muted)',
+			loading: 'var(--ink)',
+			success: 'var(--ink)',
+			error: 'var(--ink)',
+			warning: 'var(--ink)'
 		}
 	},
 	{
+		// Light values hold 4:1 or more on the light surface.
 		id: 'signal',
 		label: 'Signal',
 		colors: {
-			idle: '#64D2FF',
-			loading: '#BF5AF2',
-			success: '#63E6BE',
-			error: '#FF375F',
-			warning: '#FF9F0A'
+			idle: 'light-dark(#0071a4, #64d2ff)',
+			loading: 'light-dark(#8944ab, #bf5af2)',
+			success: 'light-dark(#0c7d5f, #63e6be)',
+			error: 'light-dark(#d30f45, #ff375f)',
+			warning: 'light-dark(#c93400, #ff9f0a)'
 		}
 	}
 ];
@@ -41,3 +39,10 @@ export const sizePresets = [
 	{ id: 'm', label: 'M', size: 84, stroke: 10 },
 	{ id: 'l', label: 'L', size: 168, stroke: 10 }
 ] as const;
+
+export const surfaces = [
+	{ id: 'dark', label: 'Dark' },
+	{ id: 'light', label: 'Light' }
+] as const;
+
+export type Surface = (typeof surfaces)[number]['id'];
