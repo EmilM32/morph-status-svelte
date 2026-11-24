@@ -6,6 +6,32 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `a11y` prop: `'polite'` (default), `'assertive'`, `'image'` or `'hidden'`.
+  - `'image'` is a static image named after its state (`role="img"`, `aria-label`) that never announces, for lists and tables. Before, the only way to silence an icon was to hide it, which left it with no text alternative.
+  - `'assertive'` interrupts, for outcomes the user must hear at once.
+- Any other attribute goes to the root `<span>`: `id`, `title`, `style`, `data-*`, `aria-describedby`, event handlers. `class` takes Svelte's class values (arrays, objects).
+- `A11Y_MODES` and the `StatusA11y` type.
+
+### Changed
+
+- `label` now names what the icon is about and goes in front of the state's name: `label="Upload"` reads "Upload: Loading". Before, it replaced every state's name, so a live icon with a `label` never announced a change.
+- A live icon mounted in a non-idle state, or switched to a live mode, fills its text about 150 ms later, so screen readers announce it. Before, that text arrived together with the region and was skipped. Server-rendered markup leaves such a region empty until the client fills it. An idle icon on mount stays quiet, as before.
+- Empty or blank `label` and `labels` entries count as unset.
+
+### Deprecated
+
+- `announce`. Use `a11y`. `announce={true}` is `a11y="polite"` and `announce={false}` is `a11y="hidden"`. `a11y` wins when both are set.
+
+### Fixed
+
+- The visually hidden text also uses `clip-path`, as the old `clip` property is deprecated.
+
+### Internal
+
+- Demo: the Save example keeps focus on its button (`aria-disabled` instead of `disabled`) and announces the outcome in a live region next to it. Before, a screen reader heard nothing.
+
 ## [0.2.0] - 2026-11-24
 
 ### Changed

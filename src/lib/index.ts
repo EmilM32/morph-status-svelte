@@ -1,5 +1,6 @@
 export { MorphStatus } from './status/index.js';
 export {
+	A11Y_MODES,
 	DEFAULT_COLORS,
 	DEFAULT_COLORS_DARK,
 	DEFAULT_COLORS_LIGHT,
@@ -10,4 +11,4 @@ export {
 	DEFAULT_STROKE,
 	STATUS_STATES
 } from './status/index.js';
-export type { MorphStatusProps, StatusColors, StatusName } from './status/index.js';
+export type { MorphStatusProps, StatusA11y, StatusColors, StatusName } from './status/index.js';

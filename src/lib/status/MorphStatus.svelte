@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import type { HTMLAttributes } from 'svelte/elements';
 	import { Spring, prefersReducedMotion } from 'svelte/motion';
 	import { Completion } from './completion.js';
 	import { alignGlyph, bakeRotation, glyphFor, toPath } from './geometry.js';
@@ -8,6 +9,7 @@
 		DEFAULT_SIZE,
 		DEFAULT_STIFFNESS,
 		DEFAULT_STROKE,
+		LIVE_REGION_DELAY,
 		MAX_STROKE,
 		MIN_DAMPING,
 		MIN_STIFFNESS,
@@ -16,13 +18,19 @@
 		clampOr,
 		cssColor,
 		finiteOr,
+		isLive,
 		normalizeStatus,
+		resolveA11y,
 		statusLabel,
+		type StatusA11y,
 		type StatusColors,
 		type StatusName
 	} from './types.js';
 
-	export type MorphStatusProps = {
+	/** Attributes the icon sets itself from `a11y`, `label` and `labels`, plus its own `onchange`. */
+	type OwnedAttributes = 'children' | 'role' | 'aria-live' | 'aria-atomic' | 'aria-hidden' | 'aria-label' | 'onchange';
+
+	export type MorphStatusProps = Omit<HTMLAttributes<HTMLSpanElement>, OwnedAttributes> & {
 		/** Mark the stroke is pouring toward. */
 		state?: StatusName;
 		/** CSS pixel size of the icon. A non-finite value falls back to the default. */
@@ -39,17 +47,25 @@
 		stiffness?: number;
 		/** Svelte spring damping, clamped to 0.05–1. Lower overshoots. */
 		damping?: number;
-		/** One label for every state. Prefer `labels` when each state should announce itself. */
+		/**
+		 * What the icon is about. It goes in front of the state's name: `label="Upload"`
+		 * reads "Upload: Loading".
+		 */
 		label?: string;
-		/** Accessible name per state. */
+		/** Name per state, in place of Idle, Loading, Success, Error, Warning. */
 		labels?: Partial<Record<StatusName, string>>;
-		/** When false, the icon is silent so a parent control can name it. */
+		/**
+		 * How the icon reaches assistive tech. `polite` (default) and `assertive` are live
+		 * regions that announce each state change. `image` is a static image named after the
+		 * state, for lists and tables. `hidden` leaves the name to a parent control.
+		 */
+		a11y?: StatusA11y;
+		/** @deprecated Use `a11y`. `true` is `a11y="polite"`, `false` is `a11y="hidden"`. */
 		announce?: boolean;
 		/** Fires when a morph starts, after the first render. */
 		onchange?: (state: StatusName) => void;
 		/** Fires when the shape has settled on `state`. The color eases on its own CSS transition. */
 		oncomplete?: (state: StatusName) => void;
-		class?: string;
 	};
 
 	let {
@@ -61,10 +77,12 @@
 		damping = DEFAULT_DAMPING,
 		label,
 		labels,
-		announce = true,
+		a11y,
+		announce,
 		onchange,
 		oncomplete,
-		class: className = ''
+		class: className,
+		...rest
 	}: MorphStatusProps = $props();
 
 	const phase = $derived(normalizeStatus(status));
@@ -75,6 +93,8 @@
 		Object.fromEntries(STATUS_STATES.map((name) => [name, cssColor(colors?.[name])])) as Partial<StatusColors>
 	);
 	const caption = $derived(statusLabel(phase, labels, label));
+	const mode = $derived(resolveA11y(a11y, announce));
+	const speaks = $derived(isLive(mode));
 	const springStiffness = $derived(clampOr(stiffness, MIN_STIFFNESS, 1, DEFAULT_STIFFNESS));
 	const springDamping = $derived(clampOr(damping, MIN_DAMPING, 1, DEFAULT_DAMPING));
 
@@ -98,6 +118,28 @@
 		};
 	}
 	let seenName = initialName;
+
+	// Text inside the live region. Screen readers skip text that arrives together
+	// with the region, so when the region appears (on mount, or when `a11y`
+	// switches to a live mode) it starts empty and the text lands a moment later.
+	// An idle icon on mount stays quiet: it has nothing to report.
+	const mountedQuiet = untrack(() => !speaks || phase === 'idle');
+	let spoken = $state(mountedQuiet ? untrack(() => caption) : '');
+	let wasLive = mountedQuiet ? untrack(() => speaks) : false;
+
+	$effect.pre(() => {
+		const text = caption;
+		const nowLive = speaks;
+		const appeared = nowLive && !wasLive;
+		wasLive = nowLive;
+		if (!appeared) {
+			spoken = text;
+			return;
+		}
+		spoken = '';
+		const timer = setTimeout(() => (spoken = text), LIVE_REGION_DELAY);
+		return () => clearTimeout(timer);
+	});
 	const completion = new Completion((done) => oncomplete?.(done));
 
 	function paintAngle(next: number) {
@@ -180,6 +222,7 @@
 </script>
 
 <span
+	{...rest}
 	class={['morph-status', className]}
 	data-state={phase}
 	style:width="{px}px"
@@ -189,9 +232,11 @@
 	style:--morph-status-success={custom.success}
 	style:--morph-status-error={custom.error}
 	style:--morph-status-warning={custom.warning}
-	role={announce ? 'status' : undefined}
-	aria-live={announce ? 'polite' : undefined}
-	aria-atomic={announce ? 'true' : undefined}
+	role={mode === 'polite' ? 'status' : mode === 'image' ? 'img' : undefined}
+	aria-live={speaks ? (mode as 'polite' | 'assertive') : undefined}
+	aria-atomic={speaks ? 'true' : undefined}
+	aria-label={mode === 'image' ? caption : undefined}
+	aria-hidden={mode === 'hidden' ? 'true' : undefined}
 >
 	<svg width={px} height={px} viewBox="0 0 100 100" aria-hidden="true" focusable="false">
 		<g {@attach trackRotor}>
@@ -225,8 +270,8 @@
 			{/if}
 		</g>
 	</svg>
-	{#if announce}
-		<span class="sr">{caption}</span>
+	{#if speaks}
+		<span class="sr">{spoken}</span>
 	{/if}
 </span>
 
@@ -304,6 +349,7 @@
 		margin: -1px;
 		overflow: hidden;
 		clip: rect(0, 0, 0, 0);
+		clip-path: inset(50%);
 		white-space: nowrap;
 		border: 0;
 	}

@@ -13,6 +13,12 @@
 		phase === 'loading' ? 'Saving' : phase === 'success' ? 'Saved' : phase === 'error' ? 'Retry' : 'Save'
 	);
 
+	// A change of the button's own text is not announced, so the outcome goes to a
+	// live region next to it. The region is in the page from the start, empty.
+	const message = $derived(
+		phase === 'loading' ? 'Saving…' : phase === 'success' ? 'Saved' : phase === 'error' ? 'Save failed' : ''
+	);
+
 	function save() {
 		if (phase === 'loading') return;
 		phase = 'loading';
@@ -47,10 +53,12 @@
 				Fail
 			</button>
 		</div>
-		<button type="button" class="save" onclick={save} disabled={phase === 'loading'} aria-busy={phase === 'loading'}>
-			<MorphStatus state={phase} size={22} strokeWidth={11} colors={onLight} announce={false} />
+		<!-- aria-disabled, not disabled: the button keeps focus while it saves. -->
+		<button type="button" class="save" onclick={save} aria-disabled={phase === 'loading'}>
+			<MorphStatus state={phase} size={22} strokeWidth={11} colors={onLight} a11y="hidden" />
 			{label}
 		</button>
+		<span class="visually-hidden" role="status">{message}</span>
 	</div>
 </section>
 
@@ -130,7 +138,7 @@
 		font-weight: 600;
 	}
 
-	.save:disabled {
+	.save[aria-disabled='true'] {
 		cursor: progress;
 	}
 
@@ -138,5 +146,17 @@
 	.outcomes button:focus-visible {
 		outline: 2px solid #f5f5f7;
 		outline-offset: 3px;
+	}
+
+	.visually-hidden {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		padding: 0;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+		border: 0;
 	}
 </style>
