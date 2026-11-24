@@ -1,0 +1,54 @@
+name: Release
+
+# Push a tag such as v0.1.2 to publish that version to npm.
+# Publishing uses npm trusted publishing (OIDC), so no npm token is stored
+# here and npm attaches provenance to the release. Set this workflow up as the
+# package's trusted publisher on npmjs.com first.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          # No dependency cache in a release build: a poisoned cache could reach the published package.
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+      - name: Check the tag against package.json and CHANGELOG.md
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $version"
+            exit 1
+          fi
+          if ! grep -q "^## \[$version\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [$version]' section"
+            exit 1
+          fi
+      # Trusted publishing needs npm 11.5.1 or later.
+      - run: npm install --global npm@^11.5.1
+      - run: npm ci
+      - name: Publish
+        run: |
+          version=$(node -p "require('./package.json').version")
+          case "$version" in
+            *-*) dist_tag=next ;;
+            *) dist_tag=latest ;;
+          esac
+          # prepublishOnly runs lint, check, test and package first.
+          npm publish --tag "$dist_tag"

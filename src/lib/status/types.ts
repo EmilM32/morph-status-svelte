@@ -11,11 +11,21 @@ export type StatusColors = Record<StatusName, string>;
 export const DEFAULT_STIFFNESS = 0.2;
 export const DEFAULT_DAMPING = 0.72;
 
+/**
+ * Floors for the spring. At 0 stiffness the stroke never moves, and at 0 damping
+ * it never stops ringing; either way `oncomplete` would never fire. At these
+ * floors a morph still settles within a few seconds.
+ */
+export const MIN_STIFFNESS = 0.02;
+export const MIN_DAMPING = 0.05;
+
 /** Icon box, in CSS pixels. The drawing itself is a 100×100 grid. */
 export const DEFAULT_SIZE = 32;
 
 /** Stroke width in viewBox units on that 100×100 grid. */
 export const DEFAULT_STROKE = 10;
+export const MIN_STROKE = 0.5;
+export const MAX_STROKE = 28;
 
 export const DEFAULT_COLORS: StatusColors = {
 	idle: '#8E8E93',
@@ -47,7 +57,16 @@ export function statusLabel(
 	return labels?.[state] ?? DEFAULT_LABELS[state];
 }
 
-export function clampUnit(value: number): number {
-	if (Number.isNaN(value)) return 0;
-	return Math.min(1, Math.max(0, value));
+/**
+ * Read a numeric prop. Numeric strings are accepted for plain-JS callers.
+ * Anything that is not a finite number (NaN, Infinity, null, '') gives `fallback`.
+ */
+export function finiteOr(value: unknown, fallback: number): number {
+	const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+	return typeof n === 'number' && Number.isFinite(n) ? n : fallback;
+}
+
+/** `finiteOr`, then clamped to `min`–`max`. */
+export function clampOr(value: unknown, min: number, max: number, fallback: number): number {
+	return Math.min(max, Math.max(min, finiteOr(value, fallback)));
 }

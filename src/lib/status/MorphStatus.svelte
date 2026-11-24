@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { Spring, prefersReducedMotion } from 'svelte/motion';
+	import { Completion } from './completion.js';
 	import {
 		alignGlyph,
 		bakeRotation,
@@ -17,7 +18,12 @@
 		DEFAULT_SIZE,
 		DEFAULT_STIFFNESS,
 		DEFAULT_STROKE,
-		clampUnit,
+		MAX_STROKE,
+		MIN_DAMPING,
+		MIN_STIFFNESS,
+		MIN_STROKE,
+		clampOr,
+		finiteOr,
 		normalizeStatus,
 		statusLabel,
 		type StatusColors,
@@ -27,15 +33,15 @@
 	export type MorphStatusProps = {
 		/** Mark the stroke is pouring toward. */
 		state?: StatusName;
-		/** CSS pixel size of the icon. */
+		/** CSS pixel size of the icon. A non-finite value falls back to the default. */
 		size?: number;
-		/** Stroke width in viewBox units. The icon is drawn on a 100×100 grid. */
+		/** Stroke width in viewBox units, clamped to 0.5–28. The icon is drawn on a 100×100 grid. */
 		strokeWidth?: number;
 		/** Override any of the built-in state colors. Hex or `rgb()`. */
 		colors?: Partial<StatusColors>;
-		/** Svelte spring stiffness, 0–1. Higher is snappier. Read live, including mid-morph. */
+		/** Svelte spring stiffness, clamped to 0.02–1. Higher is snappier. Read live, including mid-morph. */
 		stiffness?: number;
-		/** Svelte spring damping, 0–1. Lower overshoots. */
+		/** Svelte spring damping, clamped to 0.05–1. Lower overshoots. */
 		damping?: number;
 		/** One label for every state. Prefer `labels` when each state should announce itself. */
 		label?: string;
@@ -66,12 +72,12 @@
 	}: MorphStatusProps = $props();
 
 	const phase = $derived(normalizeStatus(status));
-	const px = $derived(Math.max(1, size));
-	const weight = $derived(Math.min(28, Math.max(0.5, strokeWidth)));
+	const px = $derived(Math.max(1, finiteOr(size, DEFAULT_SIZE)));
+	const weight = $derived(clampOr(strokeWidth, MIN_STROKE, MAX_STROKE, DEFAULT_STROKE));
 	const palette = $derived({ ...DEFAULT_COLORS, ...colors });
 	const caption = $derived(statusLabel(phase, labels, label));
-	const springStiffness = $derived(clampUnit(stiffness));
-	const springDamping = $derived(clampUnit(damping));
+	const springStiffness = $derived(clampOr(stiffness, MIN_STIFFNESS, 1, DEFAULT_STIFFNESS));
+	const springDamping = $derived(clampOr(damping, MIN_DAMPING, 1, DEFAULT_DAMPING));
 
 	const initialName = untrack(() => normalizeStatus(status));
 	const initialHex = untrack(() => ({ ...DEFAULT_COLORS, ...colors })[initialName]);
@@ -101,7 +107,7 @@
 	}
 	let seenName = initialName;
 	let seenHex = initialHex;
-	let generation = 0;
+	const completion = new Completion((done) => oncomplete?.(done));
 
 	function paintAngle(next: number) {
 		angle = next;
@@ -158,25 +164,18 @@
 	});
 
 	$effect(() => {
-		return () => {
-			generation += 1;
-		};
+		return () => completion.cancel();
 	});
 
 	function morph(next: StatusName, hex: string, reduced: boolean, stateChanged: boolean) {
-		const token = ++generation;
 		const rgb = parseColor(hex, fallbackRgb(next));
-		const settled = () => {
-			if (token !== generation) return;
-			oncomplete?.(next);
-		};
+		const motion = reduced ? { instant: true } : undefined;
 
 		if (!stateChanged) {
-			if (reduced) {
-				paintAngle(0);
-				void shape.set(glyphFor(next), { instant: true });
-			}
-			void ink.set(rgb, reduced ? { instant: true } : undefined);
+			if (reduced) paintAngle(0);
+			const shapeDone = reduced ? shape.set(glyphFor(next), motion) : undefined;
+			// The new targets cancel the pending morph's promises, so wait on them again.
+			completion.retarget(ink.set(rgb, motion), shapeDone);
 			return;
 		}
 
@@ -185,19 +184,14 @@
 		const target = glyphFor(next);
 		if (reduced) {
 			paintAngle(0);
-			void Promise.all([
-				shape.set(target, { instant: true }),
-				ink.set(rgb, { instant: true })
-			]).then(settled);
-			return;
+		} else {
+			// The arc is drawn in local space and rotated. Fold that rotation in
+			// before the spring runs, or the pour would jump back to 12 o'clock.
+			const baked = bakeRotation(shape.current, angle);
+			paintAngle(0);
+			void shape.set(alignGlyph(baked, target), { instant: true });
 		}
-
-		// The arc is drawn in local space and rotated. Fold that rotation in
-		// before the spring runs, or the pour would jump back to 12 o'clock.
-		const baked = bakeRotation(shape.current, angle);
-		paintAngle(0);
-		shape.set(alignGlyph(baked, target), { instant: true });
-		void Promise.all([shape.set(target), ink.set(rgb)]).then(settled);
+		completion.start(next, shape.set(target, motion), ink.set(rgb, motion));
 	}
 </script>
 
