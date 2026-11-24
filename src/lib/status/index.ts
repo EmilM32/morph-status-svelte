@@ -1,6 +1,7 @@
 export { default as MorphStatus } from './MorphStatus.svelte';
 export type { MorphStatusProps } from './MorphStatus.svelte';
 export {
+	A11Y_MODES,
 	DEFAULT_COLORS,
 	DEFAULT_COLORS_DARK,
 	DEFAULT_COLORS_LIGHT,
@@ -11,4 +12,4 @@ export {
 	DEFAULT_STROKE,
 	STATUS_STATES
 } from './types.js';
-export type { StatusColors, StatusName } from './types.js';
+export type { StatusA11y, StatusColors, StatusName } from './types.js';

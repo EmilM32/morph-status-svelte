@@ -36,25 +36,31 @@ Peer dependency: `svelte` ^5.29 (the component uses `{@attach}`). The icon’s C
 
 Keep the variable you pass out of the name `state` — a local called `state` collides with the `$state` rune.
 
-A save button is the usual place it shows up. `announce={false}` leaves the accessible name to the button.
+A save button is the usual place it shows up. Inside the button the icon is `a11y="hidden"`, so the button keeps its own name. A change of the button's text is not announced, so put the outcome in a live region next to it. Use `aria-disabled` rather than `disabled`: a disabled button drops keyboard focus.
 
 ```svelte
 <script lang="ts">
 	import { MorphStatus, type StatusName } from 'morph-status-svelte';
 
 	let phase = $state<StatusName>('idle');
+	const message = $derived(
+		{ idle: '', loading: 'Saving…', success: 'Saved', error: 'Save failed', warning: '' }[phase]
+	);
 
 	async function save() {
+		if (phase === 'loading') return;
 		phase = 'loading';
 		const ok = await persist();
 		phase = ok ? 'success' : 'error';
 	}
 </script>
 
-<button type="button" onclick={save} disabled={phase === 'loading'}>
-	<MorphStatus state={phase} size={22} announce={false} />
+<button type="button" onclick={save} aria-disabled={phase === 'loading'}>
+	<MorphStatus state={phase} size={22} a11y="hidden" />
 	{phase === 'loading' ? 'Saving' : 'Save'}
 </button>
+<!-- Any visually-hidden utility class. The region is in the page from the start. -->
+<span class="visually-hidden" role="status">{message}</span>
 ```
 
 ## Props
@@ -67,12 +73,28 @@ A save button is the usual place it shows up. `announce={false}` leaves the acce
 | `colors` | light or dark set | Partial map of CSS colors per state: hex, `rgb()`, `hsl()`, `oklch()`, named, `currentColor` or `var(--token)`. |
 | `stiffness` | `0.2` | Svelte spring stiffness, clamped to `0.02–1`. Higher is faster. |
 | `damping` | `0.72` | Svelte spring damping, clamped to `0.05–1`. Lower overshoots. |
-| `label` | — | One accessible name for every state. |
-| `labels` | Idle, Loading, Success, Error, Warning | Accessible name per state. |
-| `announce` | `true` | Polite live region. Set false inside a control that already has a name. |
+| `a11y` | `'polite'` | How the icon reaches assistive tech. See [Accessibility](#accessibility). |
+| `label` | — | What the icon is about. It goes in front of the state's name: `label="Upload"` reads "Upload: Loading". |
+| `labels` | Idle, Loading, Success, Error, Warning | Name per state. |
+| `announce` | — | Deprecated. `true` is `a11y="polite"`, `false` is `a11y="hidden"`. |
 | `onchange` | — | Called when a morph starts, after the first render. |
 | `oncomplete` | — | Called when the shape settles on the new state. |
-| `class` | — | Class on the root element. |
+| `class` | — | Class on the root element. Takes Svelte's class values: strings, arrays, objects. |
+
+Any other attribute (`id`, `title`, `style`, `data-*`, `aria-describedby`, event handlers) goes to the root `<span>`. The icon keeps `role`, `aria-live`, `aria-atomic`, `aria-label` and `aria-hidden` for itself; they follow `a11y`.
+
+### Accessibility
+
+| `a11y` | Markup | Use it for |
+| --- | --- | --- |
+| `'polite'` | `role="status"`, `aria-live="polite"` | A standalone status. Each state change is announced when the screen reader is idle. |
+| `'assertive'` | `aria-live="assertive"` | An outcome the user must hear at once. It interrupts. |
+| `'image'` | `role="img"`, `aria-label` | Many icons at once: rows of a table, items of a list. Each is named after its state, and nothing is announced. |
+| `'hidden'` | `aria-hidden="true"` | An icon inside a control that already has a name, such as a button. |
+
+- The SVG itself is always hidden from assistive tech. The name comes from `label` and `labels`.
+- Screen readers skip text that arrives together with its live region. So a live icon mounted in a non-idle state, or switched to a live mode, fills its text about 150 ms later, and it is announced. An idle icon on mount stays quiet. Server-rendered markup leaves a non-idle live region empty until the client fills it.
+- One live icon per status is enough. In a list, use `'image'` so each change does not talk over the others.
 
 ### Colors
 
@@ -102,7 +124,6 @@ Override a color per icon with `colors`, or for a whole subtree with CSS custom 
 - Loading is an open arc on a spring, then a steady rotation. Leaving that state folds the current angle into the samples, so the next pour starts from the frame on screen.
 - `prefers-reduced-motion: reduce` snaps the spring, holds the spinner still, and changes the color without a transition.
 - Stiffness and damping are read on every change, including mid-morph. Very low damping can overshoot the stroke for a moment. That is the spring. The floors (`0.02` stiffness, `0.05` damping) keep every morph settling within a few seconds, so `oncomplete` always arrives. A numeric prop that is not a finite number falls back to its default.
-- The icon is a live region (`role="status"`) whose label follows the state. Pass `label` for a single name, or `labels` to rename each one.
 
 ## Development
 

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { flushSync, mount, unmount } from 'svelte';
 import MorphStatus, { type MorphStatusProps } from '../lib/status/MorphStatus.svelte';
-import { DEFAULT_SIZE, DEFAULT_STROKE, type StatusName } from '../lib/status/types.js';
+import { DEFAULT_SIZE, DEFAULT_STROKE, LIVE_REGION_DELAY, type StatusName } from '../lib/status/types.js';
 import { trackUnhandledRejections } from './rejections.js';
 import { setReducedMotion } from './setup-dom.js';
 
@@ -174,14 +174,23 @@ describe('MorphStatus props', () => {
 });
 
 describe('MorphStatus accessibility', () => {
+	const text = (root: HTMLElement) => root.querySelector('.sr')?.textContent ?? null;
+
 	it('is a polite live region whose text follows the state', () => {
 		const icon = render({ labels: { error: 'Upload failed' } });
 		const root = icon.root();
 		expect(root.getAttribute('role')).toBe('status');
 		expect(root.getAttribute('aria-live')).toBe('polite');
-		expect(root.textContent?.trim()).toBe('Idle');
+		expect(root.getAttribute('aria-atomic')).toBe('true');
+		expect(text(root)).toBe('Idle');
 		icon.update({ state: 'error' });
-		expect(root.textContent?.trim()).toBe('Upload failed');
+		expect(text(root)).toBe('Upload failed');
+	});
+
+	it('puts `label` in front of the state name', () => {
+		const icon = render({ label: 'Upload' });
+		icon.update({ state: 'loading' });
+		expect(text(icon.root())).toBe('Upload: Loading');
 	});
 
 	it('hides the drawing from assistive tech', () => {
@@ -190,11 +199,114 @@ describe('MorphStatus accessibility', () => {
 		expect(svg.getAttribute('focusable')).toBe('false');
 	});
 
-	it('is silent with announce={false}', () => {
-		const root = render({ announce: false, state: 'error' }).root();
+	it('is an assertive live region with a11y="assertive"', () => {
+		const icon = render({ a11y: 'assertive' });
+		const root = icon.root();
+		expect(root.hasAttribute('role')).toBe(false);
+		expect(root.getAttribute('aria-live')).toBe('assertive');
+		expect(root.getAttribute('aria-atomic')).toBe('true');
+		icon.update({ state: 'error' });
+		expect(text(root)).toBe('Error');
+	});
+
+	it('is a named image that never announces with a11y="image"', () => {
+		const icon = render({ a11y: 'image', label: 'Build' });
+		const root = icon.root();
+		expect(root.getAttribute('role')).toBe('img');
+		expect(root.getAttribute('aria-label')).toBe('Build: Idle');
+		expect(root.hasAttribute('aria-live')).toBe(false);
+		expect(text(root)).toBeNull();
+		icon.update({ state: 'success' });
+		expect(root.getAttribute('aria-label')).toBe('Build: Success');
+	});
+
+	it('is hidden with a11y="hidden"', () => {
+		const root = render({ a11y: 'hidden', state: 'error' }).root();
+		expect(root.getAttribute('aria-hidden')).toBe('true');
 		expect(root.hasAttribute('role')).toBe(false);
 		expect(root.hasAttribute('aria-live')).toBe(false);
+		expect(root.hasAttribute('aria-label')).toBe(false);
 		expect(root.textContent?.trim()).toBe('');
+	});
+
+	it('keeps the deprecated announce working, with a11y taking precedence', () => {
+		expect(render({ announce: false }).root().getAttribute('aria-hidden')).toBe('true');
+		expect(render({ announce: true }).root().getAttribute('role')).toBe('status');
+		expect(render({ announce: false, a11y: 'image' }).root().getAttribute('role')).toBe('img');
+	});
+
+	it('fills a live region mounted in a non-idle state after a moment, so it is announced', async () => {
+		const root = render({ state: 'error' }).root();
+		expect(root.getAttribute('role')).toBe('status');
+		expect(text(root)).toBe('');
+		await sleep(LIVE_REGION_DELAY + 50);
+		expect(text(root)).toBe('Error');
+	});
+
+	it('fills an idle live region at once on mount, with nothing to announce', () => {
+		expect(text(render().root())).toBe('Idle');
+	});
+
+	it('fills a live region that appears together with a state change after a moment', async () => {
+		const icon = render({ a11y: 'hidden' });
+		icon.update({ a11y: 'polite', state: 'success' });
+		expect(icon.root().getAttribute('role')).toBe('status');
+		expect(text(icon.root())).toBe('');
+		await sleep(LIVE_REGION_DELAY + 50);
+		expect(text(icon.root())).toBe('Success');
+	});
+
+	it('updates at once when the region already existed', async () => {
+		const icon = render({ state: 'error' });
+		await sleep(LIVE_REGION_DELAY + 50);
+		icon.update({ state: 'success' });
+		expect(text(icon.root())).toBe('Success');
+	});
+
+	it('lands the latest text when the state changes during the delay', async () => {
+		const icon = render({ state: 'loading' });
+		icon.update({ state: 'error' });
+		await sleep(LIVE_REGION_DELAY + 50);
+		expect(text(icon.root())).toBe('Error');
+	});
+});
+
+describe('MorphStatus attributes', () => {
+	it('passes other attributes and handlers to the root', () => {
+		let clicks = 0;
+		const icon = render({
+			id: 'upload-status',
+			title: 'Upload status',
+			'data-testid': 'status',
+			'aria-describedby': 'upload-help',
+			onclick: () => clicks++
+		} as MorphStatusProps);
+		const root = icon.root();
+		expect(root.id).toBe('upload-status');
+		expect(root.title).toBe('Upload status');
+		expect(root.dataset.testid).toBe('status');
+		expect(root.getAttribute('aria-describedby')).toBe('upload-help');
+		root.click();
+		expect(clicks).toBe(1);
+	});
+
+	it('merges a style attribute with its own size', () => {
+		const root = render({ style: 'margin-left: 4px', size: 20 }).root();
+		expect(root.style.marginLeft).toBe('4px');
+		expect(root.style.width).toBe('20px');
+	});
+
+	it('takes class values the way Svelte does', () => {
+		const root = render({ class: ['a', { b: true, c: false }] }).root();
+		expect([...root.classList]).toEqual(expect.arrayContaining(['morph-status', 'a', 'b']));
+		expect(root.classList.contains('c')).toBe(false);
+	});
+
+	it('keeps the attributes it owns', () => {
+		const root = render({ role: 'button', 'aria-hidden': 'true', 'aria-label': 'x' } as unknown as MorphStatusProps).root();
+		expect(root.getAttribute('role')).toBe('status');
+		expect(root.hasAttribute('aria-hidden')).toBe(false);
+		expect(root.hasAttribute('aria-label')).toBe(false);
 	});
 });
 

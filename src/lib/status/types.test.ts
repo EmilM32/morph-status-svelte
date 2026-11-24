@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_LABELS, clampOr, cssColor, finiteOr, normalizeStatus, statusLabel } from './types.js';
+import {
+	DEFAULT_LABELS,
+	clampOr,
+	cssColor,
+	finiteOr,
+	isLive,
+	normalizeStatus,
+	resolveA11y,
+	statusLabel
+} from './types.js';
 
 describe('normalizeStatus', () => {
 	it('keeps known states and falls back to idle', () => {
@@ -10,10 +19,44 @@ describe('normalizeStatus', () => {
 });
 
 describe('statusLabel', () => {
-	it('prefers the override, then per-state labels, then defaults', () => {
-		expect(statusLabel('error', { error: 'Failed' }, 'Upload')).toBe('Upload');
+	it('uses the per-state label, then the default name', () => {
 		expect(statusLabel('error', { error: 'Failed' })).toBe('Failed');
 		expect(statusLabel('error', { success: 'Done' })).toBe(DEFAULT_LABELS.error);
+	});
+
+	it('puts `label` in front as the subject', () => {
+		expect(statusLabel('loading', undefined, 'Upload')).toBe('Upload: Loading');
+		expect(statusLabel('error', { error: 'Failed' }, 'Upload')).toBe('Upload: Failed');
+	});
+
+	it('treats empty or blank strings as unset', () => {
+		expect(statusLabel('error', { error: '' }, '')).toBe(DEFAULT_LABELS.error);
+		expect(statusLabel('error', { error: '   ' }, '  ')).toBe(DEFAULT_LABELS.error);
+		expect(statusLabel('error', { error: ' Failed ' }, ' Upload ')).toBe('Upload: Failed');
+	});
+});
+
+describe('resolveA11y', () => {
+	it.each(['polite', 'assertive', 'image', 'hidden'] as const)('keeps a11y="%s"', (mode) => {
+		expect(resolveA11y(mode, undefined)).toBe(mode);
+		expect(resolveA11y(mode, false)).toBe(mode);
+	});
+
+	it('maps the deprecated announce when a11y is unset or unknown', () => {
+		expect(resolveA11y(undefined, undefined)).toBe('polite');
+		expect(resolveA11y(undefined, true)).toBe('polite');
+		expect(resolveA11y(undefined, false)).toBe('hidden');
+		expect(resolveA11y('loud', false)).toBe('hidden');
+		expect(resolveA11y('loud', undefined)).toBe('polite');
+	});
+});
+
+describe('isLive', () => {
+	it('is true only for the live-region modes', () => {
+		expect(isLive('polite')).toBe(true);
+		expect(isLive('assertive')).toBe(true);
+		expect(isLive('image')).toBe(false);
+		expect(isLive('hidden')).toBe(false);
 	});
 });
 

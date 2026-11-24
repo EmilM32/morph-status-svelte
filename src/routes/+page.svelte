@@ -82,7 +82,7 @@
 			size={sizing.size}
 			strokeWidth={sizing.stroke}
 			colors={preset.colors}
-			announce={!playing}
+			a11y={playing ? 'hidden' : 'polite'}
 		/>
 	</div>
 	<p class="now">{DEFAULT_LABELS[phase]}</p>
@@ -95,7 +95,7 @@
 				aria-keyshortcuts={item.key}
 				onclick={() => pick(item.id)}
 			>
-				<MorphStatus state={item.id} size={18} strokeWidth={12} colors={preset.colors} announce={false} />
+				<MorphStatus state={item.id} size={18} strokeWidth={12} colors={preset.colors} a11y="hidden" />
 				{item.label}
 				<kbd>{item.key}</kbd>
 			</button>

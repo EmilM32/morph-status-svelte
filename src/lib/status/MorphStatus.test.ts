@@ -54,6 +54,29 @@ describe('MorphStatus (SSR)', () => {
 		expect(attr({}, 'path', 'stroke')).toBe('currentColor');
 	});
 
+	it('renders each a11y mode', () => {
+		expect(attr({}, 'span', 'role')).toBe('status');
+		expect(attr({ a11y: 'assertive' }, 'span', 'aria-live')).toBe('assertive');
+		expect(attr({ a11y: 'image', label: 'Build', state: 'error' }, 'span', 'aria-label')).toBe('Build: Error');
+		expect(attr({ a11y: 'image' }, 'span', 'role')).toBe('img');
+		expect(attr({ a11y: 'hidden' }, 'span', 'aria-hidden')).toBe('true');
+	});
+
+	it('renders the live text for idle, and leaves it for the client otherwise', () => {
+		const text = (props: Record<string, unknown>) => {
+			const { body } = render(MorphStatus, { props });
+			return body.match(/<span class="sr[^"]*">([^<]*)<\/span>/)?.[1] ?? null;
+		};
+		expect(text({})).toBe('Idle');
+		expect(text({ state: 'error' })).toBe('');
+		expect(text({ a11y: 'image', state: 'error' })).toBeNull();
+	});
+
+	it('passes other attributes through', () => {
+		expect(attr({ id: 'upload', 'data-testid': 'icon' }, 'span', 'id')).toBe('upload');
+		expect(attr({ id: 'upload', 'data-testid': 'icon' }, 'span', 'data-testid')).toBe('icon');
+	});
+
 	it('renders with springs at zero and NaN', () => {
 		expect(() => render(MorphStatus, { props: { stiffness: 0, damping: 0 } })).not.toThrow();
 		expect(() => render(MorphStatus, { props: { stiffness: Number.NaN, damping: Number.NaN } })).not.toThrow();

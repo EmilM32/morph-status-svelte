@@ -67,13 +67,48 @@ export function normalizeStatus(value: string | undefined): StatusName {
 	return 'idle';
 }
 
+/**
+ * How the icon reaches assistive tech.
+ * - `polite`: a live region (`role="status"`). State changes are announced when the reader is idle.
+ * - `assertive`: a live region that interrupts. For outcomes the user must hear at once.
+ * - `image`: a static image named after the state (`role="img"`). Nothing is announced. For lists and tables.
+ * - `hidden`: hidden from assistive tech. For an icon inside a control that already names it.
+ */
+export const A11Y_MODES = ['polite', 'assertive', 'image', 'hidden'] as const;
+
+export type StatusA11y = (typeof A11Y_MODES)[number];
+
+/** `a11y` wins. Otherwise the deprecated `announce`: `false` hides the icon, anything else is polite. */
+export function resolveA11y(a11y: unknown, announce: unknown): StatusA11y {
+	if (typeof a11y === 'string' && (A11Y_MODES as readonly string[]).includes(a11y)) return a11y as StatusA11y;
+	return announce === false ? 'hidden' : 'polite';
+}
+
+/** Whether the mode is a live region. */
+export function isLive(mode: StatusA11y): boolean {
+	return mode === 'polite' || mode === 'assertive';
+}
+
+/**
+ * Wait before a live region that just appeared gets its text. Screen readers
+ * miss text that arrives together with the region, so it lands a moment later.
+ */
+export const LIVE_REGION_DELAY = 150;
+
+/**
+ * Text for the state: `labels[state]`, else the default name. `label` names
+ * what the icon is about and goes in front: "Upload: Loading".
+ * Empty or blank strings count as unset.
+ */
 export function statusLabel(
 	state: StatusName,
 	labels?: Partial<Record<StatusName, string>>,
-	override?: string
+	label?: string
 ): string {
-	if (override) return override;
-	return labels?.[state] ?? DEFAULT_LABELS[state];
+	const own = typeof labels?.[state] === 'string' ? labels[state].trim() : '';
+	const text = own || DEFAULT_LABELS[state];
+	const subject = typeof label === 'string' ? label.trim() : '';
+	return subject ? `${subject}: ${text}` : text;
 }
 
 /**
