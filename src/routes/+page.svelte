@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { DEFAULT_LABELS, MorphStatus, STATUS_STATES, type StatusName } from '#lib';
-	import { colorPresets, sizePresets } from '../demo/presets.ts';
+	import { colorPresets, sizePresets, surfaces, type Surface } from '../demo/presets.ts';
 	import SaveBar from '../demo/SaveBar.svelte';
 
 	const states: { id: StatusName; label: string; key: string }[] = [
@@ -13,16 +13,24 @@
 	];
 
 	let phase = $state<StatusName>('idle');
-	let autoplay = $state(true);
-	let presetId = $state('system');
+	// The visitor's Play/Pause choice. Until they make one, autoplay runs unless
+	// they prefer reduced motion. Play still works then: it is an explicit choice.
+	let choice = $state<boolean | null>(null);
+	let presetId = $state('default');
 	let sizeId = $state<'s' | 'm' | 'l'>('l');
+	let surface = $state<Surface>('dark');
+	let switcher = $state<HTMLElement>();
 
 	const preset = $derived(colorPresets.find((item) => item.id === presetId) ?? colorPresets[0]);
 	const sizing = $derived(sizePresets.find((item) => item.id === sizeId) ?? sizePresets[2]);
-	const playing = $derived(autoplay && !prefersReducedMotion.current);
+	const playing = $derived(choice ?? !prefersReducedMotion.current);
 
 	$effect(() => {
-		if (!autoplay || prefersReducedMotion.current) return;
+		document.documentElement.dataset.theme = surface;
+	});
+
+	$effect(() => {
+		if (!playing) return;
 		const current = phase;
 		const wait = current === 'loading' ? 1680 : 1280;
 		const id = setTimeout(() => {
@@ -33,14 +41,15 @@
 	});
 
 	function pick(next: StatusName) {
-		autoplay = false;
+		choice = false;
 		phase = next;
 	}
 
+	// Keys 1–5 pick a state only while focus is in the status group, so a
+	// single-key shortcut never fires from elsewhere on the page (WCAG 2.1.4).
 	function onKey(event: KeyboardEvent) {
-		if (event.metaKey || event.ctrlKey || event.altKey) return;
-		const target = event.target;
-		if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+		if (event.metaKey || event.ctrlKey || event.altKey || event.isComposing || event.repeat) return;
+		if (!(event.target instanceof Node) || !switcher?.contains(event.target)) return;
 		const index = ['1', '2', '3', '4', '5'].indexOf(event.key);
 		if (index === -1) return;
 		event.preventDefault();
@@ -87,7 +96,7 @@
 	</div>
 	<p class="now">{DEFAULT_LABELS[phase]}</p>
 
-	<div class="switcher" role="group" aria-label="Status">
+	<div class="switcher" role="group" aria-label="Status" bind:this={switcher}>
 		{#each states as item (item.id)}
 			<button
 				type="button"
@@ -100,7 +109,7 @@
 				<kbd>{item.key}</kbd>
 			</button>
 		{/each}
-		<button type="button" class="play" onclick={() => (autoplay = !autoplay)}>
+		<button type="button" class="play" onclick={() => (choice = !playing)}>
 			{playing ? 'Pause' : 'Play'}
 		</button>
 	</div>
@@ -116,6 +125,13 @@
 		<div class="group" role="group" aria-label="Size preset">
 			{#each sizePresets as item (item.id)}
 				<button type="button" aria-pressed={sizeId === item.id} onclick={() => (sizeId = item.id)}>
+					{item.label}
+				</button>
+			{/each}
+		</div>
+		<div class="group" role="group" aria-label="Surface">
+			{#each surfaces as item (item.id)}
+				<button type="button" aria-pressed={surface === item.id} onclick={() => (surface = item.id)}>
 					{item.label}
 				</button>
 			{/each}
@@ -215,7 +231,7 @@
 		margin: 28px auto 0;
 		place-items: center;
 		border-radius: 50%;
-		background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.08), transparent 62%);
+		background: radial-gradient(circle at 50% 42%, var(--glow), transparent 62%);
 	}
 
 	.now {
@@ -233,7 +249,7 @@
 		margin: 22px auto 0;
 		padding: 4px;
 		border-radius: 18px;
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--surface);
 	}
 
 	.switcher button,
@@ -254,18 +270,18 @@
 
 	.switcher button:hover,
 	.group button:hover {
-		background: rgba(255, 255, 255, 0.06);
+		background: var(--surface-hover);
 	}
 
-	/* Stays dark so every preset's icon keeps its contrast on the selected state. */
+	/* Same scheme as the page, so every preset's icon keeps its contrast on the selected state. */
 	.switcher button[aria-pressed='true'] {
-		background: rgba(255, 255, 255, 0.14);
+		background: var(--surface-pressed);
 		box-shadow: inset 0 0 0 1px var(--line);
 	}
 
 	.group button[aria-pressed='true'] {
 		background: var(--ink);
-		color: #141416;
+		color: var(--bg);
 	}
 
 	.play {
@@ -286,7 +302,7 @@
 
 	kbd {
 		color: currentColor;
-		opacity: 0.45;
+		opacity: 0.7;
 		font-family: inherit;
 		font-size: 11px;
 	}
@@ -303,7 +319,7 @@
 		display: flex;
 		padding: 3px;
 		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.04);
+		background: var(--surface);
 	}
 
 	.path {

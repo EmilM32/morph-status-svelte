@@ -1,13 +1,9 @@
 <script lang="ts">
-	import { DEFAULT_COLORS_LIGHT, MorphStatus, type StatusName } from '#lib';
+	import { MorphStatus, type StatusName } from '#lib';
 
 	let phase = $state<StatusName>('idle');
 	let outcome = $state<'success' | 'error'>('success');
 	let timer: ReturnType<typeof setTimeout> | undefined;
-
-	// The page is `color-scheme: dark`, so the icon's defaults are the dark set.
-	// The button is light, so it takes the light set instead. These hold 3:1 on it.
-	const onLight = DEFAULT_COLORS_LIGHT;
 
 	const label = $derived(
 		phase === 'loading' ? 'Saving' : phase === 'success' ? 'Saved' : phase === 'error' ? 'Retry' : 'Save'
@@ -55,7 +51,7 @@
 		</div>
 		<!-- aria-disabled, not disabled: the button keeps focus while it saves. -->
 		<button type="button" class="save" onclick={save} aria-disabled={phase === 'loading'}>
-			<MorphStatus state={phase} size={22} strokeWidth={11} colors={onLight} a11y="hidden" />
+			<MorphStatus state={phase} size={22} strokeWidth={11} a11y="hidden" />
 			{label}
 		</button>
 		<span class="visually-hidden" role="status">{message}</span>
@@ -72,9 +68,9 @@
 		width: min(640px, 100%);
 		margin: 28px auto 0;
 		padding: 18px 18px 18px 22px;
-		border: 1px solid rgba(245, 245, 247, 0.1);
+		border: 1px solid var(--line);
 		border-radius: 22px;
-		background: rgba(255, 255, 255, 0.03);
+		background: var(--surface);
 		text-align: left;
 	}
 
@@ -103,7 +99,7 @@
 		display: flex;
 		padding: 3px;
 		border-radius: 999px;
-		background: rgba(255, 255, 255, 0.05);
+		background: var(--surface);
 	}
 
 	.outcomes button {
@@ -119,7 +115,7 @@
 	}
 
 	.outcomes button[aria-pressed='true'] {
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--surface-pressed);
 		color: var(--ink);
 	}
 
@@ -131,8 +127,10 @@
 		padding: 0 16px 0 12px;
 		border: 0;
 		border-radius: 999px;
-		background: #f5f5f7;
-		color: #111113;
+		/* The inverse of the page. Its own color-scheme makes the icon pick the matching default colors. */
+		color-scheme: var(--inverse-scheme);
+		background: var(--inverse-bg);
+		color: var(--inverse-ink);
 		cursor: pointer;
 		font-size: 14px;
 		font-weight: 600;
@@ -144,7 +142,7 @@
 
 	.save:focus-visible,
 	.outcomes button:focus-visible {
-		outline: 2px solid #f5f5f7;
+		outline: 2px solid var(--ink);
 		outline-offset: 3px;
 	}
 
