@@ -25,3 +25,8 @@ vite.config.ts.timestamp-*
 
 # ESLint
 .eslintcache
+
+# Playwright
+/test-results
+/playwright-report
+/blob-report
