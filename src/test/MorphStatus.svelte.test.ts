@@ -197,3 +197,54 @@ describe('MorphStatus accessibility', () => {
 		expect(root.textContent?.trim()).toBe('');
 	});
 });
+
+describe('MorphStatus colors', () => {
+	it('strokes in currentColor so CSS owns the color', () => {
+		const icon = render({ state: 'error' });
+		for (const path of icon.paths()) expect(path.getAttribute('stroke')).toBe('currentColor');
+	});
+
+	it('sets each colors entry as a custom property on the root', () => {
+		const icon = render({ colors: { success: 'oklch(70% 0.2 150)', error: 'var(--brand-danger)' } });
+		const style = icon.root().style;
+		expect(style.getPropertyValue('--morph-status-success')).toBe('oklch(70% 0.2 150)');
+		expect(style.getPropertyValue('--morph-status-error')).toBe('var(--brand-danger)');
+		expect(style.getPropertyValue('--morph-status-idle')).toBe('');
+	});
+
+	it('updates and removes the custom property as colors change', () => {
+		const icon = render({ colors: { idle: '#111111' } });
+		icon.update({ colors: { idle: '#222222' } });
+		expect(icon.root().style.getPropertyValue('--morph-status-idle')).toBe('#222222');
+		icon.update({ colors: {} });
+		expect(icon.root().style.getPropertyValue('--morph-status-idle')).toBe('');
+	});
+
+	it('ignores a value that would end the declaration', () => {
+		const icon = render({ colors: { idle: 'red; display: none' } });
+		expect(icon.root().style.getPropertyValue('--morph-status-idle')).toBe('');
+		expect(icon.root().style.display).toBe('');
+	});
+
+	it('ignores a value the browser does not parse as a color', () => {
+		const previous = globalThis.CSS;
+		globalThis.CSS = { supports: (_property: string, value: string) => value !== 'not-a-color' } as typeof CSS;
+		try {
+			const icon = render({ colors: { idle: 'not-a-color', error: 'tomato' } });
+			expect(icon.root().style.getPropertyValue('--morph-status-idle')).toBe('');
+			expect(icon.root().style.getPropertyValue('--morph-status-error')).toBe('tomato');
+		} finally {
+			globalThis.CSS = previous;
+		}
+	});
+
+	it('does not restart or re-report a morph when colors change', async () => {
+		const icon = render();
+		icon.update({ state: 'success' });
+		await sleep(40);
+		icon.update({ colors: { success: 'teal' } });
+		await waitFor(() => icon.completes().length > 0);
+		await sleep(100);
+		expect(icon.events).toEqual(['change:success', 'complete:success']);
+	});
+});

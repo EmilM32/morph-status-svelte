@@ -5,15 +5,12 @@ import {
 	bakeRotation,
 	glyphFor,
 	line,
-	parseColor,
 	polylineLength,
 	toPath,
 	type Glyph,
 	type Pt
 } from './geometry.js';
 import { STATUS_STATES } from './types.js';
-
-const FALLBACK = { r: 1, g: 2, b: 3 };
 
 function close(a: Pt[], b: Pt[], digits = 6) {
 	expect(a).toHaveLength(b.length);
@@ -118,23 +115,5 @@ describe('polylineLength / toPath', () => {
 	it('writes move and line commands with two decimals', () => {
 		expect(toPath([])).toBe('');
 		expect(toPath([{ x: 1, y: 2 }, { x: 3.456, y: 4 }])).toBe('M1.00 2.00L3.46 4.00');
-	});
-});
-
-describe('parseColor', () => {
-	it.each([
-		['#0A84FF', { r: 10, g: 132, b: 255 }],
-		['0a84ff', { r: 10, g: 132, b: 255 }],
-		['#abc', { r: 170, g: 187, b: 204 }],
-		['rgb(10, 20, 30)', { r: 10, g: 20, b: 30 }],
-		['rgb(10 20 30)', { r: 10, g: 20, b: 30 }],
-		['rgba(300, 20, 30, 0.5)', { r: 255, g: 20, b: 30 }],
-		['  #ffffff  ', { r: 255, g: 255, b: 255 }]
-	])('reads %s', (input, expected) => {
-		expect(parseColor(input, FALLBACK)).toEqual(expected);
-	});
-
-	it.each(['red', 'hsl(0 50% 50%)', 'var(--x)', '#abcd', '#12'])('falls back on %s', (input) => {
-		expect(parseColor(input, FALLBACK)).toBe(FALLBACK);
 	});
 });

@@ -43,6 +43,17 @@ describe('MorphStatus (SSR)', () => {
 		expect(stroke({ strokeWidth: 999 })).toBe(String(MAX_STROKE));
 	});
 
+	it('writes colors as custom properties in the server markup', () => {
+		const style = attr({ colors: { success: 'oklch(70% 0.2 150)', idle: 'red; display: none' } }, 'span', 'style');
+		expect(style).toContain('--morph-status-success: oklch(70% 0.2 150)');
+		expect(style).not.toContain('--morph-status-idle');
+		expect(style).not.toContain('display');
+	});
+
+	it('strokes in currentColor', () => {
+		expect(attr({}, 'path', 'stroke')).toBe('currentColor');
+	});
+
 	it('renders with springs at zero and NaN', () => {
 		expect(() => render(MorphStatus, { props: { stiffness: 0, damping: 0 } })).not.toThrow();
 		expect(() => render(MorphStatus, { props: { stiffness: Number.NaN, damping: Number.NaN } })).not.toThrow();

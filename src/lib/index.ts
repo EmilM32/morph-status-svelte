@@ -1,6 +1,8 @@
 export { MorphStatus } from './status/index.js';
 export {
 	DEFAULT_COLORS,
+	DEFAULT_COLORS_DARK,
+	DEFAULT_COLORS_LIGHT,
 	DEFAULT_DAMPING,
 	DEFAULT_LABELS,
 	DEFAULT_SIZE,
