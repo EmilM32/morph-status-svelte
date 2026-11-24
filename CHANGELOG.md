@@ -6,6 +6,13 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Internal
+
+- Browser tests (Playwright) in Chromium, Firefox and WebKit, run in CI per engine.
+  - Each resting glyph, and the glyph after a real morph (including leaving `loading` mid-spin), must paint the same pixels as a plain solid SVG path of that shape. This catches engine differences in `pathLength`, dash patterns, round caps and the rotation fold, without stored screenshots.
+  - Also covered: default colors per `color-scheme`, custom colors (`hsl()`, `currentColor`, inherited variables, invalid values), forced colors (Chromium), the spinner, reduced motion, and the accessibility tree for each `a11y` mode.
+  - The fixture page `/e2e` is served by `vite dev` only and returns 404 in a build.
+
 ## [0.3.0] - 2026-11-24
 
 ### Added

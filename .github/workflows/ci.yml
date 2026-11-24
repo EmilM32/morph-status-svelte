@@ -36,6 +36,34 @@ jobs:
       - name: List the files npm would publish
         run: npm pack --dry-run
 
+  browsers:
+    name: Browsers (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Rendering, colors and accessibility tree
+        run: npx playwright test --project=${{ matrix.browser }}
+      - name: Upload the report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
   svelte-floor:
     name: Oldest supported Svelte
     runs-on: ubuntu-latest
