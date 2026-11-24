@@ -26,7 +26,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-          cache: npm
+          # No dependency cache in a release build: a poisoned cache could reach the published package.
+          package-manager-cache: false
           registry-url: https://registry.npmjs.org
       - name: Check the tag against package.json and CHANGELOG.md
         run: |
