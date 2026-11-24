@@ -6,6 +6,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-24
+
 ### Changed
 
 - **Colors are CSS now.** The stroke is drawn in `currentColor`, and the icon's stylesheet picks the color for the current state. It eases over a CSS transition instead of a second spring.
@@ -61,7 +63,8 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Exports `DEFAULT_COLORS`, `DEFAULT_LABELS`, `DEFAULT_SIZE`, `DEFAULT_STROKE`, `DEFAULT_STIFFNESS`, `DEFAULT_DAMPING`, `STATUS_STATES`, and the types `MorphStatusProps`, `StatusColors`, `StatusName`.
 - Respects `prefers-reduced-motion`.
 
-[Unreleased]: https://github.com/EmilM32/morph-status-svelte/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/EmilM32/morph-status-svelte/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/EmilM32/morph-status-svelte/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/EmilM32/morph-status-svelte/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/EmilM32/morph-status-svelte/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/EmilM32/morph-status-svelte/releases/tag/v0.1.0
