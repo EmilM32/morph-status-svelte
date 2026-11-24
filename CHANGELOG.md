@@ -8,6 +8,7 @@ and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Internal
 
+- Dev dependencies: `npm audit` reports 0 vulnerabilities, down from 8 (1 high, 7 moderate). `@sveltejs/kit` 3.1.0 → 3.4.0 fixes the high one and three moderate SvelteKit advisories. `typescript-eslint` 8.72.1 → 8.74.0 brings a fixed `minimatch`. The minimum versions in `package.json` are raised to match. These packages build the demo and lint the code; none ships in the npm package.
 - Demo:
   - With reduced motion, autoplay stays off until the visitor presses Play, and Play now works. Before, the button did nothing.
   - The 1–5 shortcuts act only while focus is in the status group (WCAG 2.1.4), and skip key repeat and IME composition. Before, they fired anywhere on the page.
